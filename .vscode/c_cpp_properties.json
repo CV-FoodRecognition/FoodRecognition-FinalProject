@@ -1,0 +1,21 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "~/workspace/opencv_build/opencv/modules",
+                "~/workspace/opencv_build/opencv/modules/features2d",
+                "~/workspace/opencv_build/opencv_contrib/modules",
+                "~/workspace/opencv_build/opencv_contrib/modules/xfeatures2d",
+                "/usr/include/opencv2"
+            ],
+            "defines": [],
+            "compilerPath": "/usr/bin/gcc",
+            "cStandard": "c11",
+            "cppStandard": "gnu++14",
+            "intelliSenseMode": "linux-gcc-x64"
+        }
+    ],
+    "version": 4
+}
