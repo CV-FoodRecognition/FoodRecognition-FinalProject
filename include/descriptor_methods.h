@@ -4,7 +4,7 @@
 #include <opencv2/features2d.hpp>
 #include "utils.hpp"
 
-Result useSIFT(cv::Ptr<cv::Feature2D::SIFT> det,
+Result useSIFT(cv::Ptr<cv::SIFT> det,
                cv::Mat &img1,
                cv::Mat &img2);
 

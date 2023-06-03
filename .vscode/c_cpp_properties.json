@@ -3,9 +3,11 @@
         {
             "name": "Win32",
             "includePath": [
-                "${workspaceFolder}/**",
-                "~/workspace/opencv_build/opencv/modules",
-                "~/workspace/opencv_build/opencv/modules/features2d"
+                "C:\\workspace\\opencv\\build\\modules",
+                "C:\\workspace\\opencv\\build\\modules\\features2d",
+                "C:\\opencv\\opencv\\build\\include",
+                "C:\\opencv\\opencv\\build\\x64\\vc15\\lib",
+                "C:\\Users\\ricky\\OneDrive\\Desktop\\uni\\Computer vision\\final project\\FoodRecognition-FinalProject\\include"
             ],
             "defines": [],
             "compilerPath": "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.35.32215/bin/Hostx64/x64/cl.exe",
