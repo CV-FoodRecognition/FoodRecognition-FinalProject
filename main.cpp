@@ -1,5 +1,5 @@
-#include <opencv2/opencv.hpp>
 #include <iostream>
+#include "headers/segmentation.h"
 
 // GLOBAL VARIABLES
 std::string window_name = "Edge Map";
@@ -45,6 +45,10 @@ int main(int argc, char **argv)
         cv::imshow("in2", in2);
 
         cv::waitKey(); */
+
+    cv::Mat copy1;
+    in1.copyTo(copy1);
+    meanShiftFunct(copy1);
 
     // canny per calcolare edges
     cv::Mat in1_gray;
