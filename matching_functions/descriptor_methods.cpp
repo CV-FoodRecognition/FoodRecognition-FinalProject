@@ -1,6 +1,6 @@
-#include "include/descriptor_methods.hpp"
 #include <iostream>
 #include <opencv2/features2d.hpp>
+#include "descriptor_methods.h"
 
 Result useSIFT(cv::Ptr<cv::SIFT> det, cv::Mat &img1, cv::Mat &img2)
 {
