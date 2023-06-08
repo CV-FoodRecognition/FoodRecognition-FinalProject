@@ -1,5 +1,10 @@
 #include <iostream>
 #include "headers/segmentation.h"
+#include "headers/utils.h"
+
+using cv::Mat;
+using std::string;
+using std::vector;
 
 // GLOBAL VARIABLES
 std::string window_name = "Edge Map";
@@ -36,45 +41,61 @@ int main(int argc, char **argv)
         return -1;
     }
 
-    // print immagini
-    /*
-        cv::namedWindow("in1");
-        cv::imshow("in1", in1);
-
-        cv::namedWindow("in2");
-        cv::imshow("in2", in2);
-
-        cv::waitKey(); */
-
-    cv::Mat copy1;
-    in1.copyTo(copy1);
-    meanShiftFunct(copy1);
-
-    // canny per calcolare edges
     cv::Mat in1_gray;
-    CannyThreshold(in1, in1_gray);
-    cv::namedWindow("in1");
-    cv::imshow("in1", in1);
-    cv::waitKey();
+    cvtColor(in1, in1_gray, cv::COLOR_BGR2GRAY);
+    in1_gray.convertTo(in1_gray, CV_8UC1);
 
-    // kmeansSegmentation(15, in1);
+    cv::GaussianBlur(in1_gray, in1_gray, cv::Size(7, 7), 1.5, 1.5, 4);
 
-    // kmeansSegmentation(15, in2);
+    // Hough Circles per ottenere solo i piatti
+    std::vector<cv::Vec3f> circles;
+    cv::HoughCircles(in1_gray, circles, cv::HOUGH_GRADIENT,
+                     1, 40, 100, 100,
+                     150, 400); // min radius and max radius
 
-    // riduzione rumore, filtraggio, condizioni ottimali per step successivo
+    cv::Mat contoursCircles = cv::Mat::zeros(in1.size(), CV_8UC1);
 
-    /*
-    cv::Mat eqIn1, eqIn2;
-    cv::equalizeHist(in1, eqIn1);
-    cv::equalizeHist(in2, eqIn2);
+    for (size_t i = 0; i < circles.size(); i++)
+    {
+        cv::Vec3i c = circles[i];
+        cv::Point center = cv::Point(c[0], c[1]); // c0 = x coord , c1 = y coord of the circle
+        int radius = c[2];                        // c2 = ray of the circle
+        circle(contoursCircles, center, radius, 255, 1);
+    }
 
-    cv::namedWindow("eqIn1");
-    cv::imshow("eqIn1", eqIn1);
+    cv::namedWindow("in1_gray");
+    cv::imshow("in1_gray", contoursCircles);
 
-    cv::namedWindow("eqIn2");
-    cv::imshow("eqIn2", eqIn2);
+    vector<vector<cv::Point>> contours;
 
-    cv::waitKey(); */
+    for (int k = 0; k < circles.size(); k++)
+    {
+        cv::Mat dish = cv::Mat::zeros(in1.size(), CV_8UC3);
+        cv::findContours(contoursCircles, contours, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE);
+        cv::drawContours(in1, contours, -1, 255, 1, 8);
+        cv::namedWindow("print");
+        cv::imshow("print", in1);
+
+        cv::Vec3i c = circles[k];
+
+        for (int i = 0; i < in1.rows; ++i)
+        {
+            for (int j = 0; j < in1.cols; ++j)
+            {
+                if (isInsideCircle(c, i, j)) // outside of the circle
+                {
+                    dish.at<unsigned char>(i, j) = 0;
+                }
+                else // inside of the circle
+                {
+                    dish.at<unsigned char>(i, j) = in1.at<unsigned char>(j, i);
+                }
+            }
+        }
+        cv::namedWindow("dish");
+        cv::imshow("dish", dish);
+        cv::waitKey();
+    }
 
     // cerca in (1) i tipi di cibi (segmentation), sapendo che c'è un solo primo e un solo secondo
     // e riconosce i cibi tra i 13 del dataset

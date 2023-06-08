@@ -1,0 +1,38 @@
+// print immagini
+    /*
+        cv::namedWindow("in1");
+        cv::imshow("in1", in1);
+
+        cv::namedWindow("in2");
+        cv::imshow("in2", in2);
+
+        cv::waitKey(); */
+
+    cv::Mat copy1;
+    in1.copyTo(copy1);
+    meanShiftFunct(copy1);
+
+    // canny per calcolare edges
+    CannyThreshold(in1, in1_gray);
+    cv::namedWindow("in1.1");
+    cv::imshow("in1.1", in1);
+    cv::waitKey();
+
+    // kmeansSegmentation(15, in1);
+
+    // kmeansSegmentation(15, in2);
+
+    // riduzione rumore, filtraggio, condizioni ottimali per step successivo
+
+    /*
+    cv::Mat eqIn1, eqIn2;
+    cv::equalizeHist(in1, eqIn1);
+    cv::equalizeHist(in2, eqIn2);
+
+    cv::namedWindow("eqIn1");
+    cv::imshow("eqIn1", eqIn1);
+
+    cv::namedWindow("eqIn2");
+    cv::imshow("eqIn2", eqIn2);
+
+    cv::waitKey(); */
