@@ -27,7 +27,7 @@ int main(int argc, char **argv)
 {
     // riceve in input 2 foto: vassoio prima (1) e dopo pranzo (2)
     cv::Mat in1 = cv::imread("../images/food_image.jpg", CV_32F);
-    cv::Mat in2 = cv::imread("../images/leftover1.jpg", CV_32F);
+    // cv::Mat in2 = cv::imread("../images/leftover1.jpg", CV_32F);
 
     if (in1.data == NULL)
     {
@@ -35,11 +35,11 @@ int main(int argc, char **argv)
         return -1;
     }
 
-    if (in2.data == NULL)
-    {
-        std::cout << "ERROR" << std::endl;
-        return -1;
-    }
+    // if (in2.data == NULL)
+    //{
+    //     std::cout << "ERROR" << std::endl;
+    //     return -1;
+    // }
 
     cv::Mat in1_gray;
     cvtColor(in1, in1_gray, cv::COLOR_BGR2GRAY);
@@ -53,52 +53,29 @@ int main(int argc, char **argv)
                      1, 40, 100, 100,
                      150, 400); // min radius and max radius
 
-    cv::Mat contoursCircles = cv::Mat::zeros(in1.size(), CV_8UC1);
-
-    for (size_t i = 0; i < circles.size(); i++)
-    {
-        cv::Vec3i c = circles[i];
-        cv::Point center = cv::Point(c[0], c[1]); // c0 = x coord , c1 = y coord of the circle
-        int radius = c[2];                        // c2 = ray of the circle
-        circle(contoursCircles, center, radius, 255, 1);
-    }
-
-    cv::namedWindow("in1_gray");
-    cv::imshow("in1_gray", contoursCircles);
-
-    vector<vector<cv::Point>> contours;
-
+    std::vector<cv::Mat> dishes;
     for (int k = 0; k < circles.size(); k++)
     {
+        cv::Mat mask = cv::Mat::zeros(in1.size(), CV_8UC1);
         cv::Mat dish = cv::Mat::zeros(in1.size(), CV_8UC3);
-        cv::findContours(contoursCircles, contours, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE);
-        cv::drawContours(in1, contours, -1, 255, 1, 8);
-        cv::namedWindow("print");
-        cv::imshow("print", in1);
-
+        dishes.push_back(dish);
         cv::Vec3i c = circles[k];
+        cv::Point center = cv::Point(c[0], c[1]); // c0 = x coord , c1 = y coord of the circle
+        int radius = c[2];                        // c2 = ray of the circle
+        circle(mask, center, radius, 255, -1);
 
-        for (int i = 0; i < in1.rows; ++i)
-        {
-            for (int j = 0; j < in1.cols; ++j)
-            {
-                if (isInsideCircle(c, i, j)) // outside of the circle
-                {
-                    dish.at<unsigned char>(i, j) = 0;
-                }
-                else // inside of the circle
-                {
-                    dish.at<unsigned char>(i, j) = in1.at<unsigned char>(j, i);
-                }
-            }
-        }
-        cv::namedWindow("dish");
-        cv::imshow("dish", dish);
-        cv::waitKey();
+        in1.copyTo(dishes[k], mask);
+
+        // showImg("dishes", dishes[k]);
     }
 
     // cerca in (1) i tipi di cibi (segmentation), sapendo che c'è un solo primo e un solo secondo
     // e riconosce i cibi tra i 13 del dataset
+
+    for (int k = 0; k < circles.size(); k++)
+    {
+        kmeansSegmentation(3, dishes[k]);
+    }
 
     // confronta le due foto per trovare quali cibi sono presenti nella seconda immagine (partendo da quelli della prima)
 
