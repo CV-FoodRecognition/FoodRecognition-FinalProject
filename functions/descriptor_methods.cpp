@@ -1,13 +1,26 @@
-#include <iostream>
-#include <opencv2/features2d.hpp>
+#include "utils.h"
 #include "descriptor_methods.h"
+#include <opencv2/xfeatures2d.hpp>
 
-Result useSIFT(cv::Ptr<cv::SIFT> det, cv::Mat &img1, cv::Mat &img2)
+// Descriptor creation using Factory Pattern
+cv::Ptr<cv::Feature2D> createDescriptor(DescriptorType type)
 {
-    Result res;
-    det->detectAndCompute(img1, cv::noArray(), res.kp1, res.descriptor1);
-    det->detectAndCompute(img2, cv::noArray(), res.kp2, res.descriptor2);
+    switch (type)
+    {
+    case SURF:
+        return cv::xfeatures2d::SURF::create();
+    case SIFT:
+        return cv::SIFT::create();
+    case ORB:
+        return cv::ORB::create();
+    }
+}
 
+Result useDescriptor(cv::Mat &img1, cv::Mat &img2, DescriptorType type)
+{
+    cv::Ptr<cv::Feature2D> det = createDescriptor(type);
+
+    Result res;
     if (det.empty())
         std::cout << "ERROR - det";
     if (res.kp1.empty())

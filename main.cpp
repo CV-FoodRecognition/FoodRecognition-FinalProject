@@ -1,4 +1,6 @@
 #include <iostream>
+#include "headers/descriptor_methods.h"
+#include "headers/matcher_methods.h"
 #include "headers/segmentation.h"
 #include "headers/utils.h"
 
@@ -26,8 +28,8 @@ static void CannyThreshold(cv::Mat &in1, cv::Mat &in1_gray)
 int main(int argc, char **argv)
 {
     // riceve in input 2 foto: vassoio prima (1) e dopo pranzo (2)
-    cv::Mat in1 = cv::imread("../images/food_image.jpg", CV_32F);
-    // cv::Mat in2 = cv::imread("../images/leftover1.jpg", CV_32F);
+    cv::Mat in1 = cv::imread("../images/Train/food_image_salad.jpg", CV_32F);
+    cv::Mat in2 = cv::imread("../images/Train/Affine_Salad.jpg", CV_32F);
 
     if (in1.data == NULL)
     {
@@ -35,11 +37,11 @@ int main(int argc, char **argv)
         return -1;
     }
 
-    // if (in2.data == NULL)
-    //{
-    //     std::cout << "ERROR" << std::endl;
-    //     return -1;
-    // }
+    if (in2.data == NULL)
+    {
+        std::cout << "ERROR" << std::endl;
+        return -1;
+    }
 
     cv::Mat in1_gray;
     cvtColor(in1, in1_gray, cv::COLOR_BGR2GRAY);
@@ -68,6 +70,13 @@ int main(int argc, char **argv)
 
         // showImg("dishes", dishes[k]);
     }
+
+    Result descriptor = useDescriptor(in1, in2, DescriptorType::ORB); // change the descriptor type to use
+                                                                      //  SIFT or SURF
+
+    bruteForceHammingSorted(in1, in2, descriptor); // Hamming for ORB only
+
+    // bruteForceKNN(in1, in2, descriptor)            // KNN for SIFT and SURF
 
     // cerca in (1) i tipi di cibi (segmentation), sapendo che c'è un solo primo e un solo secondo
     // e riconosce i cibi tra i 13 del dataset

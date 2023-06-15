@@ -8,5 +8,7 @@
 
 void kmeansSegmentation(int k, cv::Mat &src);
 cv::Mat meanShiftFunct(cv::Mat src);
+void removeShadows(cv::Mat &src, cv::Mat &dst);
+void removeBackground(cv::Mat &src);
 
 #endif

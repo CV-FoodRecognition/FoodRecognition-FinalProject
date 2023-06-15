@@ -49,17 +49,59 @@ Mat meanShiftFunct(Mat src)
     // imshow("thershold segmentation", bw);
 }
 
+void equalizeHistogram(cv::Mat &src, cv::Mat &dst)
+{
+    // Convert the image to the lab color space
+    cv::Mat lab;
+    cv::cvtColor(src, lab, cv::COLOR_BGR2Lab);
+
+    // Split the channels
+    std::vector<cv::Mat> labChannels(3);
+    cv::split(lab, labChannels);
+
+    // Equalize the histogram of the Y channel
+    cv::equalizeHist(labChannels[0], labChannels[0]);
+
+    // Merge the channels back and convert back to BGR color space
+    cv::merge(labChannels, lab);
+    cv::cvtColor(lab, dst, cv::COLOR_Lab2BGR);
+}
+
+void removeBackground(cv::Mat &src)
+{
+    for (int k = 255; k > 20; k = k - 5)
+    {
+        Mat mask;
+        inRange(src, Scalar(k - 40, k - 40, k - 40), Scalar(k, k, k), mask);
+        src.setTo(Scalar(0, 0, 0), mask);
+    }
+}
+
 void kmeansSegmentation(int k, cv::Mat &src)
 {
-    cv::Mat shifted;
-    cv::pyrMeanShiftFiltering(src, shifted, 80, 150);
+    cv::Mat dst, shifted;
+
+    cv::bilateralFilter(src,
+                        dst,
+                        7,
+                        10, // sigma color
+                        2,  // sigma space
+                        BORDER_DEFAULT);
+    showImg("bilateral", dst);
+
+    removeBackground(dst);
+    showImg("remove Background", dst);
+
+    // equalizeHistogram(dst, dst);
+
+    src = dst;
 
     std::vector<int> labels;
     cv::Mat1f colors;
     int attempts = 10;
-    cv::TermCriteria criteria = cv::TermCriteria(cv::TermCriteria::EPS + cv::TermCriteria::COUNT, 20, 1.);
+    cv::TermCriteria criteria = cv::TermCriteria(cv::TermCriteria::EPS + cv::TermCriteria::COUNT, 5, 1.);
 
-    cv::Mat input = shifted.reshape(1, src.rows * src.cols);
+    cv::Mat input = src.reshape(1, src.rows * src.cols);
     input.convertTo(input, CV_32F);
 
     cv::kmeans(input, k, labels, criteria, attempts, cv::KMEANS_PP_CENTERS, colors);
@@ -81,4 +123,26 @@ void kmeansSegmentation(int k, cv::Mat &src)
         showImg(windowName, results[i]);
     }
     cv::waitKey();
+}
+
+void removeShadows(cv::Mat &src, cv::Mat &dst)
+{
+    // Converting image to LAB color space
+    cv::Mat lab;
+    cv::cvtColor(src, lab, cv::COLOR_BGR2Lab);
+
+    // Splitting the channels
+    std::vector<cv::Mat> labChannels(3);
+    cv::split(lab, labChannels);
+
+    // Apply Contrast Limited Adaptive Histogram Equalization
+    cv::Ptr<cv::CLAHE> clahe = cv::createCLAHE();
+    clahe->setClipLimit(1);
+    cv::Mat enhancedL;
+    clahe->apply(labChannels[0], enhancedL);
+
+    // Merge the channels back and convert back to BGR color space
+    enhancedL.copyTo(labChannels[0]);
+    cv::merge(labChannels, lab);
+    cv::cvtColor(lab, dst, cv::COLOR_Lab2BGR);
 }

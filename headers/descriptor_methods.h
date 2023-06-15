@@ -1,11 +1,18 @@
-#ifndef METHODS_H
-#define METHODS_H
+#ifndef DESCRIPTOR_METHODS_H
+#define DESCRIPTOR_METHODS_H
 
-#include <opencv2/features2d.hpp>
+#include <opencv2/core.hpp>
 #include "utils.h"
 
-Result useSIFT(cv::Ptr<cv::SIFT> det,
-               cv::Mat &img1,
-               cv::Mat &img2);
+enum DescriptorType
+{
+    SURF,
+    SIFT,
+    ORB
+};
 
-#endif // METHODS_H
+// Descriptor creation using Factory Pattern
+cv::Ptr<cv::Feature2D> createDescriptor(DescriptorType type);
+Result useDescriptor(cv::Mat &img1, cv::Mat &img2, DescriptorType type);
+
+#endif // DESCRIPTOR_METHODS_H
