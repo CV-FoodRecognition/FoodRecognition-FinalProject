@@ -7,6 +7,7 @@
 
 std::vector<cv::Mat> analyzeImages(const std::string &filepathJPG0, const std::string &filepathJPG1);
 bool isInsideCircle(cv::Vec3i c, int x, int y);
+void showImg(std::string title, cv::Mat image);
 
 struct Result
 {

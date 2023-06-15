@@ -7,6 +7,6 @@
 #include <opencv2/highgui.hpp>
 
 void kmeansSegmentation(int k, cv::Mat &src);
-void meanShiftFunct(cv::Mat src);
+cv::Mat meanShiftFunct(cv::Mat src);
 
 #endif
