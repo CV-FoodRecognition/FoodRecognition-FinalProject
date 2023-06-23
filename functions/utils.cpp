@@ -13,22 +13,35 @@ void showImg(std::string title, cv::Mat image)
     cv::waitKey();
 }
 
+double computeArea(cv::Rect box)
+{
+    return box.width * box.height;
+}
+
+void removeDish(cv::Mat &shifted)
+{
+    for (int k = 255; k > 20; k = k - 5)
+    {
+        cv::Mat mask;
+        cv::inRange(shifted, cv::Scalar(k - 40, k - 40, k - 40), cv::Scalar(k, k, k), mask);
+        shifted.setTo(cv::Scalar(0, 0, 0), mask);
+    }
+}
+
 /*
     SharpnessType:
     -   LAPLACIAN
     -   HIGHPASS
 */
-cv::Mat sharpenImg(cv::Mat src, SharpnessType t)
+void sharpenImg(cv::Mat &src, SharpnessType t)
 {
-    cv::Mat sharpenedImg;
-
     if (t = SharpnessType::HIGHPASS)
     {
         cv::Mat blurred;
         cv::GaussianBlur(src, blurred, cv::Size(7, 7), 3);
 
         cv::Mat highPass = src - blurred;
-        sharpenedImg = src + highPass;
+        src = src + highPass;
     }
     else if (t = SharpnessType::LAPLACIAN)
     {
@@ -38,9 +51,15 @@ cv::Mat sharpenImg(cv::Mat src, SharpnessType t)
         laplacian.convertTo(laplacian8bit, CV_8UC3);
         // showImg("laplacian", src);
 
-        sharpenedImg = src + laplacian8bit;
+        src = src + laplacian8bit;
     }
 
-    showImg("Sharpened", sharpenedImg);
-    return sharpenedImg;
+    showImg("Sharpened", src);
+}
+
+cv::Mat convertGray(cv::Mat &src)
+{
+    cv::Mat gray;
+    cv::cvtColor(src, gray, cv::COLOR_BGR2GRAY);
+    return gray;
 }

@@ -4,6 +4,75 @@
 using namespace cv;
 using namespace std;
 
+void doHough(std::vector<cv::Mat> &dishes, Mat &in, Mat &in_gray)
+{
+    // Blur to remove possible noise
+    cv::GaussianBlur(in_gray, in_gray, cv::Size(7, 7), 1.5, 1.5, 4);
+
+    std::vector<cv::Vec3f> circles;
+    cv::HoughCircles(in_gray, circles, cv::HOUGH_GRADIENT,
+                     1, 40, 100, 100,
+                     150, 400); // min radius & max radius
+
+    for (int k = 0; k < circles.size(); k++)
+    {
+        cv::Mat mask = cv::Mat::zeros(in.size(), CV_8UC1);
+        cv::Mat dish = cv::Mat::zeros(in.size(), CV_8UC3);
+        dishes.push_back(dish);
+        cv::Vec3i c = circles[k];
+        cv::Point center = cv::Point(c[0], c[1]); // c0 = x coord , c1 = y coord of the circle
+        int radius = c[2];                        // c2 = ray of the circle
+        circle(mask, center, radius, 255, -1);
+        in.copyTo(dishes[k], mask);
+
+        // showImg("dishes", dishes[k]);
+    }
+}
+
+void doMSER(std::vector<cv::Rect> &mser_bbox, cv::Mat shifted, Mat result)
+{
+    cv::Ptr<cv::MSER> ms = cv::MSER::create();
+    std::vector<std::vector<cv::Point>> regions;
+    ms->detectRegions(shifted, regions, mser_bbox);
+
+    for (int i = 0; i < regions.size(); i++)
+    {
+        cv::rectangle(shifted, mser_bbox[i], CV_RGB(0, 255, 0));
+
+        cv::Mat mask, bg, fg;
+
+        // grabCut(shifted, mask, mser_bbox[i], bg, fg, 1, GC_INIT_WITH_RECT);
+        Rect rect = mser_bbox[i];
+        int area = rect.width * rect.height;
+        for (int i = rect.x; i < rect.x + rect.width; i++)
+        {
+            for (int j = rect.y; j < rect.y + rect.height; j++)
+            {
+                result.at<Vec3b>(Point(i, j))[0] = 0;
+                result.at<Vec3b>(Point(i, j))[1] = 0;
+                result.at<Vec3b>(Point(i, j))[2] = 255;
+            }
+        }
+    }
+}
+
+Scalar computeAvgColor(Mat shifted, Rect box)
+{
+    Mat roi = shifted(box);
+    // Convert ROI to HSV color space
+    Mat roi_hsv;
+    cvtColor(roi, roi_hsv, COLOR_BGR2HSV);
+
+    // Define lower and upper bounds for colors to include
+    Scalar lowerb = Scalar(10, 10, 10);
+    Scalar upperb = Scalar(245, 245, 245);
+
+    // Create mask to exclude colors outside of bounds
+    Mat mask;
+    inRange(roi_hsv, lowerb, upperb, mask);
+    Scalar avg_color = mean(roi, mask);
+}
+
 Mat meanShiftFunct(Mat src)
 {
     cv::Mat shifted;

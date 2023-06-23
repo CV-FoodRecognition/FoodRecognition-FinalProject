@@ -19,6 +19,9 @@ enum SharpnessType
 
 bool isInsideCircle(cv::Vec3i c, int x, int y);
 void showImg(std::string title, cv::Mat image);
-cv::Mat sharpenImg(cv::Mat src, SharpnessType t);
+void sharpenImg(cv::Mat &src, SharpnessType t);
+cv::Mat convertGray(cv::Mat &src);
+void removeDish(cv::Mat &shifted);
+double computeArea(cv::Rect box);
 
 #endif // UTILS_H
