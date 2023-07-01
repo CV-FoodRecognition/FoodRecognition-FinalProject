@@ -12,7 +12,6 @@ void bruteForceHammingSorted(cv::Mat img1, cv::Mat img2, Result res)
         img1.convertTo(img1, CV_8U);
     if (!img2.empty() && img2.type() != CV_8U)
         img2.convertTo(img2, CV_8U);
-    img2.convertTo(img2, CV_8U);
 
     // Check and convert descriptors to 8-bit unsigned integer type
     if (res.descriptor1.type() != CV_8U)

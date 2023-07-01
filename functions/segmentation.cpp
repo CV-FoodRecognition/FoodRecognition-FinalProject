@@ -1,8 +1,13 @@
 #include "../headers/segmentation.h"
-#include "../headers/utils.h"
 
 using namespace cv;
 using namespace std;
+
+extern std::string window_name;
+extern int low_k;
+extern cv::Mat src;
+extern std::vector<int> kmeans_labels;
+extern cv::Mat1f colors;
 
 void doHough(std::vector<cv::Mat> &dishes, Mat &in, Mat &in_gray)
 {
@@ -59,18 +64,19 @@ void doMSER(std::vector<cv::Rect> &mser_bbox, cv::Mat shifted, Mat result)
 Scalar computeAvgColor(Mat shifted, Rect box)
 {
     Mat roi = shifted(box);
-    // Convert ROI to HSV color space
-    Mat roi_hsv;
-    cvtColor(roi, roi_hsv, COLOR_BGR2HSV);
 
     // Define lower and upper bounds for colors to include
-    Scalar lowerb = Scalar(10, 10, 10);
-    Scalar upperb = Scalar(245, 245, 245);
+    Scalar lowerb = Scalar(15, 15, 15);
+    Scalar upperb = Scalar(240, 240, 240);
 
     // Create mask to exclude colors outside of bounds
     Mat mask;
-    inRange(roi_hsv, lowerb, upperb, mask);
+    inRange(roi, lowerb, upperb, mask);
     Scalar avg_color = mean(roi, mask);
+    Mat image(100, 100, CV_8UC3, avg_color);
+    // showImg("average color", image);
+
+    return avg_color;
 }
 
 Mat meanShiftFunct(Mat src)
@@ -106,7 +112,7 @@ Mat meanShiftFunct(Mat src)
     imgResult.convertTo(imgResult, CV_8UC3);
     imgLaplacian.convertTo(imgLaplacian, CV_8UC3);
     // imshow( "Laplace Filtered Image", imgLaplacian );
-    imshow("New Sharped Image", imgResult);
+    // imshow("New Sharped Image", imgResult);
     waitKey();
 
     return imgResult;
@@ -146,52 +152,31 @@ void removeBackground(cv::Mat &src)
     }
 }
 
-void kmeansSegmentation(int k, cv::Mat &src)
+cv::Mat kmeansSegmentation(int k, cv::Mat &src)
 {
-    cv::Mat dst, shifted;
-
-    cv::bilateralFilter(src,
-                        dst,
-                        7,
-                        10, // sigma color
-                        2,  // sigma space
-                        BORDER_DEFAULT);
-    showImg("bilateral", dst);
-
-    removeBackground(dst);
-    showImg("remove Background", dst);
-
-    // equalizeHistogram(dst, dst);
-
-    src = dst;
-
     std::vector<int> labels;
     cv::Mat1f colors;
-    int attempts = 10;
-    cv::TermCriteria criteria = cv::TermCriteria(cv::TermCriteria::EPS + cv::TermCriteria::COUNT, 5, 1.);
+    int attempts = 5;
+    cv::TermCriteria criteria = cv::TermCriteria(cv::TermCriteria::EPS + cv::TermCriteria::COUNT, 10, 1.);
 
     cv::Mat input = src.reshape(1, src.rows * src.cols);
     input.convertTo(input, CV_32F);
 
     cv::kmeans(input, k, labels, criteria, attempts, cv::KMEANS_PP_CENTERS, colors);
 
-    std::vector<cv::Mat> masks(k);
-    for (int i = 0; i < k; i++)
-        masks[i] = cv::Mat::zeros(src.size(), CV_8U);
+    // creats output image
+    cv::Mat output(src.size(), CV_8UC3);
 
+    // defines colors for each cluster
+    std::vector<cv::Vec3b> cluster_colors(k);
+    for (int i = 0; i < k; i++)
+        cluster_colors[i] = cv::Vec3b(rand() % 256, rand() % 256, rand() % 256);
+
+    // sets pixel values in output image based on cluster assignments
     for (int i = 0; i < src.rows * src.cols; i++)
-        masks[labels[i]].at<uchar>(i / src.cols, i % src.cols) = 255;
+        output.at<cv::Vec3b>(i / src.cols, i % src.cols) = cluster_colors[labels[i]];
 
-    std::vector<cv::Mat> results(k);
-    for (int i = 0; i < k; i++)
-        src.copyTo(results[i], masks[i]);
-
-    for (int i = 0; i < k; i++)
-    {
-        std::string windowName = "mask" + std::to_string(i + 1);
-        showImg(windowName, results[i]);
-    }
-    cv::waitKey();
+    return output;
 }
 
 void removeShadows(cv::Mat &src, cv::Mat &dst)

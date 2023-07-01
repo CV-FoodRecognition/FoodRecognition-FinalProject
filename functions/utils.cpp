@@ -13,6 +13,19 @@ void showImg(std::string title, cv::Mat image)
     cv::waitKey();
 }
 
+std::string enumToString(FoodType label)
+{
+    switch (label)
+    {
+    case FoodType::Meat:
+        return "Meat";
+    case FoodType::Beans:
+        return "Beans";
+    default:
+        return "UNKNOWN";
+    }
+}
+
 double computeArea(cv::Rect box)
 {
     return box.width * box.height;
@@ -49,12 +62,11 @@ void sharpenImg(cv::Mat &src, SharpnessType t)
         cv::Laplacian(src, laplacian, CV_16S);
         cv::Mat laplacian8bit;
         laplacian.convertTo(laplacian8bit, CV_8UC3);
-        // showImg("laplacian", src);
 
         src = src + laplacian8bit;
     }
 
-    showImg("Sharpened", src);
+    // showImg("Sharpened", src);
 }
 
 cv::Mat convertGray(cv::Mat &src)

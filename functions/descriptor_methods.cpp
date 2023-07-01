@@ -1,11 +1,9 @@
-#include "utils.h"
 #include "descriptor_methods.h"
-#include <opencv2/xfeatures2d.hpp>
 
 // Descriptor creation using Factory Pattern
-cv::Ptr<cv::Feature2D> createDescriptor(DescriptorType type)
+cv::Ptr<cv::Feature2D> createDescriptor(DescriptorType typ)
 {
-    switch (type)
+    switch (typ)
     {
     case SURF:
         return cv::xfeatures2d::SURF::create();
@@ -16,9 +14,9 @@ cv::Ptr<cv::Feature2D> createDescriptor(DescriptorType type)
     }
 }
 
-Result useDescriptor(cv::Mat &img1, cv::Mat &img2, DescriptorType type)
+Result useDescriptor(cv::Mat &img1, cv::Mat &img2, DescriptorType typ)
 {
-    cv::Ptr<cv::Feature2D> det = createDescriptor(type);
+    cv::Ptr<cv::Feature2D> det = createDescriptor(typ);
 
     Result res;
     if (det.empty())

@@ -17,6 +17,19 @@ enum SharpnessType
     HIGHPASS
 };
 
+enum FoodType
+{
+    Meat,
+    Beans
+};
+
+struct BoxLabel
+{
+    cv::Rect mser_box;
+    FoodType label;
+};
+
+std::string enumToString(FoodType label);
 bool isInsideCircle(cv::Vec3i c, int x, int y);
 void showImg(std::string title, cv::Mat image);
 void sharpenImg(cv::Mat &src, SharpnessType t);
