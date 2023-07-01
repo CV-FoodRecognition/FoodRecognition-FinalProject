@@ -169,8 +169,11 @@ cv::Mat kmeansSegmentation(int k, cv::Mat &src)
 
     // defines colors for each cluster
     std::vector<cv::Vec3b> cluster_colors(k);
-    for (int i = 0; i < k; i++)
-        cluster_colors[i] = cv::Vec3b(rand() % 256, rand() % 256, rand() % 256);
+    cluster_colors[0] = cv::Vec3b(0, 0, 0);     // black == Background
+    cluster_colors[1] = cv::Vec3b(0, 255, 255); // yellow
+    cluster_colors[2] = cv::Vec3b(255, 0, 0);   // blue
+    cluster_colors[3] = cv::Vec3b(0, 255, 0);   // green
+    cluster_colors[4] = cv::Vec3b(0, 0, 255);   // red
 
     // sets pixel values in output image based on cluster assignments
     for (int i = 0; i < src.rows * src.cols; i++)
