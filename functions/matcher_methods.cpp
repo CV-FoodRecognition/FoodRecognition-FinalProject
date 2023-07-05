@@ -35,9 +35,8 @@ void bruteForceHammingSorted(cv::Mat img1, cv::Mat img2, Result res)
     showImg(file, imgMatches);
 }
 
-void bruteForceKNN(cv::Mat img1, cv::Mat img2, Result res)
+int bruteForceKNN(cv::Mat img1, cv::Mat img2, Result res, cv::Mat &final)
 {
-    // Convert images to 8-bit unsigned integer type
     img1.convertTo(img1, CV_8U);
     img2.convertTo(img2, CV_8U);
 
@@ -48,16 +47,54 @@ void bruteForceKNN(cv::Mat img1, cv::Mat img2, Result res)
     std::vector<cv::DMatch> goodMatches;
     for (const auto &match : matches)
     {
-        if (match[0].distance < 0.6 * match[1].distance)
+        if (match[0].distance < 0.7 * match[1].distance)
         {
             goodMatches.push_back(match[0]);
         }
     }
 
     cv::Mat imgMatches;
-    cv::drawMatches(img1, res.kp1, img2, res.kp2, matches, imgMatches);
+    cv::drawMatches(img1, res.kp1, img2, res.kp2, goodMatches, imgMatches);
 
-    std::string file = "KNN - Matching - SURF.png";
+    int x = final.cols;
+    int y = final.rows;
+    int max_x = 0;
+    int max_y = 0;
+    for (int i = 0; i < goodMatches.size(); i++)
+    {
+        int id = goodMatches[i].queryIdx;
+        float kp_x = res.kp1[id].pt.x;
+        float kp_y = res.kp1[id].pt.y;
+        std::cout << "kp_x:  " << kp_x << std::endl;
+        std::cout << "kp_y:  " << kp_y << std::endl;
+        if (kp_x < x)
+        {
+            x = cvRound(kp_x);
+        }
+        if (kp_x > max_x)
+        {
+            max_x = cvRound(kp_x);
+        }
+        if (kp_y < y)
+        {
+            y = cvRound(kp_y);
+        }
+        if (kp_y > max_y)
+        {
+            max_y = cvRound(kp_y);
+        }
+        std::cout << "x:  " << x << std::endl;
+        std::cout << "y:  " << y << std::endl;
+        std::cout << "max_x:  " << max_x << std::endl;
+        std::cout << "max_y:  " << max_y << std::endl;
+    }
 
+    cv::Rect boundingBox(x, y, max_x - x, max_y - y);
+    cv::rectangle(final, boundingBox, CV_RGB(0, 255, 0));
+
+    // SAVING RESULT
+    std::string file = "KNN - Matching - SIFT.png";
     showImg(file, imgMatches);
+
+    return goodMatches.size();
 }

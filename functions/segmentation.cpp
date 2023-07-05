@@ -9,9 +9,13 @@ extern cv::Mat src;
 extern std::vector<int> kmeans_labels;
 extern cv::Mat1f colors;
 
-void doHough(std::vector<cv::Mat> &dishes, Mat &in, Mat &in_gray)
+void doHough(std::vector<cv::Mat> &dishes, std::vector<int> &dishesMatches, Mat &in)
 {
-    // Blur to remove possible noise
+
+    cv::Mat in_gray;
+    cvtColor(in, in_gray, cv::COLOR_BGR2GRAY);
+    in_gray.convertTo(in_gray, CV_8UC1);
+
     cv::GaussianBlur(in_gray, in_gray, cv::Size(7, 7), 1.5, 1.5, 4);
 
     std::vector<cv::Vec3f> circles;
@@ -24,11 +28,14 @@ void doHough(std::vector<cv::Mat> &dishes, Mat &in, Mat &in_gray)
         cv::Mat mask = cv::Mat::zeros(in.size(), CV_8UC1);
         cv::Mat dish = cv::Mat::zeros(in.size(), CV_8UC3);
         dishes.push_back(dish);
+        dishesMatches.push_back(0);
         cv::Vec3i c = circles[k];
         cv::Point center = cv::Point(c[0], c[1]); // c0 = x coord , c1 = y coord of the circle
         int radius = c[2];                        // c2 = ray of the circle
         circle(mask, center, radius, 255, -1);
         in.copyTo(dishes[k], mask);
+
+        cout << "2c hough cycles" << endl;
 
         // showImg("dishes", dishes[k]);
     }
@@ -154,6 +161,10 @@ void removeBackground(cv::Mat &src)
 
 cv::Mat kmeansSegmentation(int k, cv::Mat &src)
 {
+    // Pyramidal Filtering with Mean Shift to have a CARTOONISH effect on input image
+    cv::pyrMeanShiftFiltering(src, src, 18, 150);
+    // showImg("Cartoonish (MeanShift Filter)", shifted);
+
     std::vector<int> labels;
     cv::Mat1f colors;
     int attempts = 5;

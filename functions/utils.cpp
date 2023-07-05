@@ -31,13 +31,13 @@ double computeArea(cv::Rect box)
     return box.width * box.height;
 }
 
-void removeDish(cv::Mat &shifted)
+cv::Mat removeDish(cv::Mat &src)
 {
     for (int k = 255; k > 20; k = k - 5)
     {
         cv::Mat mask;
-        cv::inRange(shifted, cv::Scalar(k - 40, k - 40, k - 40), cv::Scalar(k, k, k), mask);
-        shifted.setTo(cv::Scalar(0, 0, 0), mask);
+        cv::inRange(src, cv::Scalar(k - 30, k - 30, k - 30), cv::Scalar(k, k, k), mask);
+        src.setTo(cv::Scalar(0, 0, 0), mask);
     }
 }
 

@@ -5,30 +5,18 @@
 #include "headers/utils.h"
 #include "headers/ImagePreprocessor.hpp"
 
-using cv::Vec3b, cv::Rect, cv::Scalar, cv::Point, cv::Mat;
-using std::string, std::vector;
-
 using namespace cv;
 using namespace std;
 
-std::string window_name = "K Means Trackbar";
-int low_k = 1;
+const std::string window_name = "K Means Trackbar";
 const int max_k = 5;
+int low_k = 1;
 
-// Point MatchingMethod(int, void *);
-void computeProbability(BoxLabel &box, Scalar averageBoxColor, double areaBox);
-
-static void onTrackbar(int, void *user)
-{
-    cv::Mat &src = *(cv::Mat *)user;
-    cv::Mat srcCopy = src.clone();
-    int k = cv::getTrackbarPos("K trackbar", window_name);
-    if (k > 0)
-    {
-        Mat out = kmeansSegmentation(k, srcCopy);
-        imshow(window_name, out);
-    }
-}
+void computeProbability(BoxLabel &box);
+void computeSegmentArea(SegmentAreas &sa);
+void detectAndRecognize(std::vector<cv::Mat> &dishes, std::vector<cv::Mat> &templates,
+                        std::vector<int> &dishesMatches, cv::Mat &in1, cv::Mat &final, Result &result);
+static void onTrackbar(int, void *user);
 
 int main(int argc, char **argv)
 {
@@ -39,10 +27,19 @@ int main(int argc, char **argv)
     }
 
     std::string nameFile = "../images/" + std::string(argv[1]);
+    std::vector<cv::Mat> segmentedImages;
     cv::Mat in1 = cv::imread(nameFile, CV_32F);
-    cv::Mat in2 = cv::imread("../images/Train/Affine_Salad.jpg", CV_32F);
+    Result result;
+    std::vector<cv::Mat> templates;
+    std::vector<std::string> labels;
 
-    // img_tm = in1.clone();
+    // READ TEMPLATES
+    Mat templ_fagioli = cv::imread("images/Train/fagioli.jpg", cv::IMREAD_GRAYSCALE);
+    Mat templ_conchiglie = cv::imread("images/Train/conchiglie.jpg", cv::IMREAD_GRAYSCALE);
+    templates.push_back(templ_fagioli);
+    labels.push_back("fagioli");
+    templates.push_back(templ_conchiglie);
+    labels.push_back("pasta");
 
     if (!in1.data)
     {
@@ -50,120 +47,113 @@ int main(int argc, char **argv)
         return -1;
     }
 
-    if (!in2.data)
-    {
-        std::cerr << "ERROR on input image" << std::endl;
-        return -1;
-    }
-
-    cv::Mat in1_gray;
-    cvtColor(in1, in1_gray, cv::COLOR_BGR2GRAY);
-    in1_gray.convertTo(in1_gray, CV_8UC1);
-
     // Hough Transform
     std::vector<cv::Mat> dishes;
-    doHough(dishes, in1, in1_gray);
+    std::vector<int> dishesMatches;
+    doHough(dishes, dishesMatches, in1);
 
-    cv::Mat result = in1.clone();
+    cv::Mat final = in1.clone();
+    detectAndRecognize(dishes, templates,
+                       dishesMatches, in1, final, result);
+
     std::vector<cv::Rect> mser_boxes;
     for (int d = 0; d < dishes.size(); d++)
     {
+        // FILTERS
         cv::Mat src = dishes[d];
-        cv::Mat shifted, bilateral;
-        // showImg("dish", src);
-
-        // Pyramidal Filtering with Mean Shift to have a CARTOONISH effect on input image
-        cv::pyrMeanShiftFiltering(src, shifted, 25, 30);
-        // showImg("Cartoonish (MeanShift Filter)", shifted);
-
-        // Removes the dish from the picture
+        cv::Mat shifted,
+            bilateral;
+        bilateralFilter(src, shifted, 1, 0.5, 0.5);
+        cv::pyrMeanShiftFiltering(src, shifted, 25, 200);
+        // showImg("PyrMean", shifted);
         removeDish(shifted);
-
-        // Sharpening
         sharpenImg(shifted, SharpnessType::HIGHPASS);
 
-        // Ask for K in dish to compute kMeans
-        cv::namedWindow(window_name);
-        cv::createTrackbar("K trackbar", window_name, NULL, max_k, onTrackbar, &shifted);
-        onTrackbar(1, &shifted);
-        cv::waitKey(0);
+        // CALLBACK
+        namedWindow(window_name);
+        PassedStruct *ps = new PassedStruct;
+        ps->p1 = shifted;
+        ps->p2 = to_string(d);
+        createTrackbar("K trackbar", window_name, NULL, max_k, onTrackbar, ps);
+        onTrackbar(2, ps);
+        waitKey(0);
+        delete ps;
+    }
 
-        // templ_1 = cv::imread("../images/beans.jpg", IMREAD_COLOR);
-        // templ_tm.push_back(templ_1);
+    // READING RESULTS
+    for (int d = 0; d < dishes.size(); d++)
+    {
+        Mat segmentedImg = imread("../images/Results/kmeansResult" + to_string(d) + ".jpg", CV_8UC3);
+        segmentedImages.push_back(segmentedImg);
+    }
 
-        // namedWindow(image_window, WINDOW_AUTOSIZE);
-        // namedWindow(result_window, WINDOW_AUTOSIZE);
-        // Point matchLoc = MatchingMethod(0, 0);
-
-        // Blob detection
-        // doMSER(mser_boxes, shifted, result);
-        // showImg("MSER", shifted);
-
-        /* for (int i = 0; i < mser_boxes.size(); i++)
+    // SEGMENTATION
+    for (int i = 0; i < segmentedImages.size(); i++)
+    {
+        if (segmentedImages[i].data)
         {
-            Scalar averageBoxColor = computeAvgColor(shifted, mser_boxes[i]);
-            double areaBox = computeArea(mser_boxes[i]);
-
-            cout << averageBoxColor[0] << " -- " << averageBoxColor[1] << " -- " << averageBoxColor[2] << endl;
-
-            double similarityScore;
-
-            // PROBAB.
-             //       *Computes probability that it is a food with : -avg color of box -
-             //   area of box - similarity score computed by template matching
-
-            BoxLabel b;
-
-            b.mser_box = mser_boxes[i];
-            computeProbability(b, averageBoxColor, areaBox);
-            string label = enumToString(b.label);
-            // showImg("Mser Box " + label, shifted(b.mser_box));
+            SegmentAreas sa;
+            sa.p1 = segmentedImages[i];
+            showImg("aa", sa.p1);
+            computeSegmentArea(sa);
+            cout << "Area Blu: " << sa.areaBlue << "\nArea gialla: " << sa.areaYellow
+                 << "Area verde: " << sa.areaGreen << "\nArea rossa: " << sa.areaRed
+                 << "Area nera: " << sa.areaBlack << endl;
         }
     }
 
-
-        templ_1 = cv::imread("../images/BeansSIFT.jpg", IMREAD_COLOR);
-        // templ_tm.push_back(templ_1);
-        // labels.push_back("beans");
-
-        // namedWindow(image_window, WINDOW_AUTOSIZE);
-        // namedWindow(result_window, WINDOW_AUTOSIZE);
-        // MatchingMethod(0, 0);
-        // waitKey(0);
-
-        // SIFT ORB SURF
-
-        Result descriptor = useDescriptor(in1, templ_1, DescriptorType::ORB); // change the descriptor type to use
-                                                                              //  SIFT or SURF
-        bruteForceHammingSorted(in1, templ_1, descriptor);                    // Hamming for ORB only
-
-        // bruteForceKNN(in1, templ_1, descriptor); // KNN for SIFT and SURF
-
-        /* Segmentation for (int k = 0; k < circles.size(); k++)
-        {
-            kmeansSegmentation(3, dishes[k]);
-        }
-        */
-
-        /* SEGMENTATION
-         *    cerca in (1) i tipi di cibi (segmentation), sapendo che c'è un solo primo e un solo secondo
-         *    e riconosce i cibi tra i 13 del dataset
-         */
-
-        /* CONFRONTO FOTO
-         *   confronta le due foto per trovare quali cibi sono presenti nella seconda immagine (partendo da quelli della prima)
-         */
-
-        /* METRICHE
-         *   calcolo delle metriche
-         */
-    }
     return 0;
 }
 
-void computeProbability(BoxLabel &box, Scalar averageBoxColor, double areaBox)
+void detectAndRecognize(std::vector<cv::Mat> &dishes, std::vector<cv::Mat> &templates,
+                        std::vector<int> &dishesMatches, cv::Mat &in1, cv::Mat &final, Result &result)
 {
+    for (int t = 0; t < templates.size(); t++)
+    {
+        cout << "inizio a cercare match" << endl;
+        for (int i = 0; i < dishes.size(); i++)
+        {
+            result = useDescriptor(dishes[i], templates[t], DescriptorType::SIFT);
+            cv::Mat some = Mat(in1.rows, in1.cols, CV_8UC3);
+            dishesMatches[i] = bruteForceKNN(dishes[i], templates[t], result, some);
+            std::cout << "matches dishes " << i << " : " << dishesMatches[i] << std::endl;
+        }
+        cout << "finito di cercare i match" << endl;
+        int max_key = 0;
+        for (int i = 0; i < dishesMatches.size(); i++)
+        {
+            if (dishesMatches[i] > dishesMatches[max_key])
+            {
+                max_key = i;
+            }
+        }
+        cout << "trovato il piatto con più match" << endl;
+        if (dishesMatches[max_key] > 0)
+        {
+            cout << "match finale (quello più giusto)" << endl;
+            result = useDescriptor(dishes[max_key], templates[t], DescriptorType::SIFT);
+            bruteForceKNN(in1, templates[t], result, final);
+        }
+    }
+}
 
+void computeSegmentArea(SegmentAreas &sa)
+{
+    Mat maskYellow, maskBlue, maskGreen, maskRed;
+    inRange(sa.p1, Scalar(0, 250, 250), Scalar(0, 255, 255), maskYellow);
+    inRange(sa.p1, Scalar(250, 0, 0), Scalar(255, 0, 0), maskBlue);
+    inRange(sa.p1, Scalar(0, 250, 0), Scalar(0, 255, 0), maskGreen);
+    inRange(sa.p1, Scalar(0, 0, 250), Scalar(0, 0, 255), maskRed);
+
+    sa.areaYellow = countNonZero(maskYellow);
+    sa.areaBlue = countNonZero(maskBlue);
+    sa.areaGreen = countNonZero(maskGreen);
+    sa.areaRed = countNonZero(maskRed);
+    sa.areaBlack = sa.p1.rows + sa.p1.cols - (sa.areaBlue + sa.areaGreen + sa.areaRed + sa.areaYellow);
+}
+
+void computeProbability(BoxLabel &box)
+{
     Mat out;
     Scalar upperBound(200, 170, 180); // Lighter Part of Meat
     Scalar lowerBound(95, 80, 60);    // Darker Part of Meat
@@ -171,7 +161,7 @@ void computeProbability(BoxLabel &box, Scalar averageBoxColor, double areaBox)
     bool inRange = true;
     for (int i = 0; i < 3; i++)
     {
-        if (averageBoxColor[i] < lowerBound[i] || averageBoxColor[i] > upperBound[i])
+        if (box.averageBoxColor[i] < lowerBound[i] || box.averageBoxColor[i] > upperBound[i])
         {
             inRange = false;
             break;
@@ -180,54 +170,25 @@ void computeProbability(BoxLabel &box, Scalar averageBoxColor, double areaBox)
 
     cout << inRange;
 
-    // If area small and color brown --> beans
-
-    // If mean color is dark green --> pasta al pesto
-
-    // If mean color is light green --> salad
-
-    // If area big and color brown --> meat
-
-    // If
-
-    if (areaBox > 2000 && inRange)
-    {
+    if (box.areaBox > 2000 && inRange)
         box.label = FoodType::Meat;
-    }
     else
-    {
         box.label = FoodType::Beans;
-    }
 }
 
-/*
-Point MatchingMethod(int, void *)
+static void onTrackbar(int, void *user)
 {
-    Mat img_display;
-    img_tm.copyTo(img_display);
-    double minVal;
-    double maxVal;
-    Point minLoc;
-    Point maxLoc;
-    Point matchLoc;
+    PassedStruct &ps = *(PassedStruct *)user;
+    cv::Mat src = ps.p1;
+    std::string count = ps.p2;
 
-    for (int i = 0; i < templ_tm.size(); i++)
+    cv::Mat out;
+    cv::Mat srcCopy = src.clone();
+    int k = cv::getTrackbarPos("K trackbar", window_name);
+    if (k > 0)
     {
-        int result_cols = img_tm.cols - templ_tm[i].cols + 1;
-        int result_rows = img_tm.rows - templ_tm[i].rows + 1;
-        result_tm.create(result_rows, result_cols, CV_32FC1);
-        matchTemplate(img_tm, templ_tm[i], result_tm, TM_SQDIFF);
-        normalize(result_tm, result_tm, 0, 1, NORM_MINMAX, -1, Mat());
-
-        minMaxLoc(result_tm, &minVal, &maxVal, &minLoc, &maxLoc, Mat());
-        matchLoc = minLoc;
-        // cout << minVal << endl;
-        rectangle(img_display, matchLoc, Point(matchLoc.x + templ_tm[i].cols, matchLoc.y + templ_tm[i].rows), Scalar(0, 0, 255), 2, 8, 0);
-        rectangle(result_tm, matchLoc, Point(matchLoc.x + templ_tm[i].cols, matchLoc.y + templ_tm[i].rows), Scalar(0, 0, 255), 2, 8, 0);
-        cv::putText(img_display, labels[i], cv::Point(matchLoc.x, matchLoc.y - 10), cv::FONT_HERSHEY_SIMPLEX, 0.9, cv::Scalar(0, 0, 255), 2);
-        imshow(image_window, img_display);
-        imshow(result_window, result_tm);
+        out = kmeansSegmentation(k, srcCopy);
+        imshow(window_name, out);
+        imwrite("../images/Results/kmeansResult" + count + ".jpg", out);
     }
-    return matchLoc;
 }
-*/

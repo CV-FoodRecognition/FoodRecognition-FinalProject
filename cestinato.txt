@@ -69,3 +69,98 @@ for (int i = 0; i < k; i++)
 
 return results;
 }
+
+
+
+
+
+
+        cv::namedWindow(window_name);
+        PassedStruct *ps = new PassedStruct;
+        ps->p1 = shifted;
+        ps->p2 = to_string(d);
+        cv::createTrackbar("K trackbar", window_name, NULL, max_k, onTrackbar, ps);
+        onTrackbar(2, ps);
+        cv::waitKey(0);
+        cv::Mat res = ps->p1;
+        segmentedImages.push_back(res);
+        delete ps;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// COMMENTI
+
+
+        // templ_1 = cv::imread("../images/beans.jpg", IMREAD_COLOR);
+        // templ_tm.push_back(templ_1);
+
+        // namedWindow(image_window, WINDOW_AUTOSIZE);
+        // namedWindow(result_window, WINDOW_AUTOSIZE);
+        // Point matchLoc = MatchingMethod(0, 0);
+
+        // Blob detection
+        /* doMSER(mser_boxes, shifted, result);
+        // showImg("MSER", shifted);
+
+        for (int i = 0; i < mser_boxes.size(); i++)
+        {
+            BoxLabel b;
+            b.averageBoxColor = computeAvgColor(shifted, mser_boxes[i]);
+            b.areaBox = computeArea(mser_boxes[i]);
+
+            // cout << b.averageBoxColor[0] << " -- " << b.averageBoxColor[1] << " -- " << b.averageBoxColor[2] << endl;
+
+            double similarityScore = SIFTfunctionRick() ;
+
+        // PROBAB.
+        //       *Computes probability that it is a food with : -avg color of box -
+        //   area of box - similarity score computed by template matching
+
+        // b.mser_box = mser_boxes[i];
+        // computeProbability(b);
+        // string label = enumToString(b.label);
+        // showImg("Mser Box " + label, shifted(b.mser_box));
+        //}
+        //}
+
+        // templ_1 = cv::imread("../images/BeansSIFT.jpg", IMREAD_COLOR);
+        //  templ_tm.push_back(templ_1);
+        //  labels.push_back("beans");
+
+        // namedWindow(image_window, WINDOW_AUTOSIZE);
+        // namedWindow(result_window, WINDOW_AUTOSIZE);
+        // MatchingMethod(0, 0);
+        // waitKey(0);
+
+        // SIFT ORB SURF
+
+        // Result descriptor = useDescriptor(in1, templ_1, DescriptorType::ORB); // change the descriptor type to use
+        //   SIFT or SURF
+        // bruteForceHammingSorted(in1, templ_1, descriptor);                    // Hamming for ORB only
+
+        // bruteForceKNN(in1, templ_1, descriptor); // KNN for SIFT and SURF
+
+
+
+        /* CONFRONTO FOTO
+         *   confronta le due foto per trovare quali cibi sono presenti nella seconda immagine (partendo da quelli della prima)
+         */
+
+        /* METRICHE
+         *   calcolo delle metriche
+         */

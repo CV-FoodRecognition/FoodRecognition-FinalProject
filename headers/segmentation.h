@@ -9,7 +9,7 @@
 using namespace cv;
 using namespace std;
 
-void doHough(std::vector<cv::Mat> &dishes, cv::Mat &in, cv::Mat &in_gray);
+void doHough(std::vector<cv::Mat> &dishes, std::vector<int> &dishesMatches, Mat &in);
 void doMSER(std::vector<cv::Rect> &mser_bbox, cv::Mat shifted, Mat result);
 cv::Mat kmeansSegmentation(int k, cv::Mat &src);
 cv::Mat meanShiftFunct(cv::Mat src);
