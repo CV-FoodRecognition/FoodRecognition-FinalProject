@@ -92,6 +92,9 @@ int main(int argc, char **argv)
         int k;
         cout << "Choose a K KMeans: ";
         cin >> k;
+
+        k = min(5, k);
+
         cv::Mat r = kmeansSegmentation(k, shifted);
         showImg(to_string(k), r);
         imwrite("../images/Results/kmeansResult" + to_string(d) + ".jpg", r);
@@ -114,8 +117,8 @@ int main(int argc, char **argv)
             showImg("aa", sa.p1);
             computeSegmentArea(sa);
             cout << "Area Blu: " << sa.areaBlue << "\nArea gialla: " << sa.areaYellow
-                 << "Area verde: " << sa.areaGreen << "\nArea rossa: " << sa.areaRed
-                 << "Area nera: " << sa.areaBlack << endl;
+                 << "\nArea verde: " << sa.areaGreen << "\nArea rossa: " << sa.areaRed
+                 << "\nArea nera: " << sa.areaBlack << endl;
         }
     }
 
@@ -163,10 +166,10 @@ void detectAndRecognize(std::vector<cv::Mat> &dishes, std::vector<cv::Mat> &temp
 void computeSegmentArea(SegmentAreas &sa)
 {
     Mat maskYellow, maskBlue, maskGreen, maskRed, maskBlack;
-    inRange(sa.p1, Scalar(0, 255, 255), Scalar(0, 255, 255), maskYellow);
-    inRange(sa.p1, Scalar(255, 0, 0), Scalar(255, 0, 0), maskBlue);
-    inRange(sa.p1, Scalar(0, 255, 0), Scalar(0, 255, 0), maskGreen);
-    inRange(sa.p1, Scalar(0, 0, 255), Scalar(0, 0, 255), maskRed);
+    inRange(sa.p1, Scalar(0, 254, 254), Scalar(0, 255, 255), maskYellow);
+    inRange(sa.p1, Scalar(254, 0, 0), Scalar(255, 0, 0), maskBlue);
+    inRange(sa.p1, Scalar(0, 254, 0), Scalar(0, 255, 0), maskGreen);
+    inRange(sa.p1, Scalar(0, 0, 254), Scalar(0, 0, 255), maskRed);
     inRange(sa.p1, Scalar(0, 0, 0), Scalar(10, 10, 10), maskBlack);
 
     sa.areaYellow = countNonZero(maskYellow);

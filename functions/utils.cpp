@@ -10,7 +10,7 @@ void showImg(std::string title, cv::Mat image)
 {
     cv::namedWindow(title, cv::WINDOW_NORMAL);
     cv::imshow(title, image);
-    cv::waitKey();
+    cv::waitKey(0);
 }
 
 std::string enumToString(FoodType label)

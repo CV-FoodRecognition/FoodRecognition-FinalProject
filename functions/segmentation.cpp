@@ -15,30 +15,69 @@ void doHough(std::vector<cv::Mat> &dishes, std::vector<int> &dishesMatches, Mat 
     cv::Mat in_gray;
     cvtColor(in, in_gray, cv::COLOR_BGR2GRAY);
     in_gray.convertTo(in_gray, CV_8UC1);
-
     cv::GaussianBlur(in_gray, in_gray, cv::Size(7, 7), 1.5, 1.5, 4);
-
+    // Hough Circles per ottenere solo i piatti
     std::vector<cv::Vec3f> circles;
     cv::HoughCircles(in_gray, circles, cv::HOUGH_GRADIENT,
-                     1, 40, 100, 100,
-                     150, 400); // min radius & max radius
+                     1, 1, 100, 85,
+                     150, 500); // min radius and max radius
+
+    std::vector<cv::Vec3f> accepted_circles;
 
     for (int k = 0; k < circles.size(); k++)
     {
+        cv::Vec3i c = circles[k];
+        cv::Point center = cv::Point(c[0], c[1]);
+        int radius = c[2];
+
         cv::Mat mask = cv::Mat::zeros(in.size(), CV_8UC1);
         cv::Mat dish = cv::Mat::zeros(in.size(), CV_8UC3);
-        dishes.push_back(dish);
-        dishesMatches.push_back(0);
-        cv::Vec3i c = circles[k];
-        cv::Point center = cv::Point(c[0], c[1]); // c0 = x coord , c1 = y coord of the circle
-        int radius = c[2];                        // c2 = ray of the circle
-        circle(mask, center, radius, 255, -1);
-        in.copyTo(dishes[k], mask);
 
-        cout << "2c hough cycles" << endl;
-
-        // showImg("dishes", dishes[k]);
+        if (accepted_circles.size() == 0)
+        {
+            dishesMatches.push_back(0);
+            cv::circle(mask, center, radius, 255, -1);
+            Mat mask_colored;
+            in.copyTo(mask_colored, mask);
+            dishes.push_back(mask_colored);
+            accepted_circles.push_back(c);
+        }
+        if (!isInside(accepted_circles, center))
+        {
+            dishesMatches.push_back(0);
+            cv::circle(mask, center, radius, 255, -1);
+            Mat mask_colored;
+            in.copyTo(mask_colored, mask);
+            dishes.push_back(mask_colored);
+            accepted_circles.push_back(c);
+        }
     }
+    for (int i = 0; i < accepted_circles.size(); i++)
+    {
+        cv::Vec3i c = accepted_circles[i];
+        cout << "centro esistente: " << c[0] << " , " << c[1] << endl;
+        cout << "raggio:  " << c[2] << endl;
+    }
+}
+
+bool isInside(std::vector<cv::Vec3f> circles, cv::Point center)
+{
+    for (int i = 0; i < circles.size(); i++)
+    {
+        cv::Vec3i c = circles[i];
+        cv::Point existingCenter = cv::Point(c[0], c[1]);
+        cout << "centro esistente: " << c[0] << " , " << c[1] << endl;
+        cout << "centro nuovo: " << center.x << " , " << center.y << endl;
+        double distance = cv::norm(existingCenter - center);
+        cout << "distanza: " << distance << "   raggio:  " << c[2] << endl;
+        if (distance < c[2])
+        {
+            cout << "scartato" << endl;
+            return true;
+        }
+    }
+    cout << "va bene" << endl;
+    return false;
 }
 
 void doMSER(std::vector<cv::Rect> &mser_bbox, cv::Mat shifted, Mat result)
@@ -175,20 +214,33 @@ cv::Mat kmeansSegmentation(int k, cv::Mat &src)
 
     cv::kmeans(input, k, labels, criteria, attempts, cv::KMEANS_PP_CENTERS, colors);
 
-    // creats output image
-    cv::Mat output(src.size(), CV_8UC3);
+    vector<pair<int, int>> clusterCounts(k);
+    for (int i = 0; i < labels.size(); i++)
+    {
+        clusterCounts[labels[i]].first++;            // count num of pixels per cluster
+        clusterCounts[labels[i]].second = labels[i]; // index
+    }
 
-    // defines colors for each cluster
-    std::vector<cv::Vec3b> cluster_colors(k);
-    cluster_colors[0] = cv::Vec3b(0, 0, 0);     // black == Background
-    cluster_colors[1] = cv::Vec3b(0, 255, 255); // yellow
-    cluster_colors[2] = cv::Vec3b(255, 0, 0);   // blue
-    cluster_colors[3] = cv::Vec3b(0, 255, 0);   // green
-    cluster_colors[4] = cv::Vec3b(0, 0, 255);   // red
+    // clusters by number of pixels
+    sort(clusterCounts.rbegin(), clusterCounts.rend());
 
-    // sets pixel values in output image based on cluster assignments
+    // cluster colors
+    vector<Vec3b> clusterColors(k);
+    clusterColors[0] = Vec3b(0, 0, 0);     // black -- background
+    clusterColors[1] = Vec3b(0, 255, 255); // yellow  -- first food per pixel
+    clusterColors[2] = Vec3b(255, 0, 0);   // blue  -- second food per pixel
+    clusterColors[3] = Vec3b(0, 255, 0);   // green -- additional color
+    clusterColors[4] = Vec3b(0, 0, 255);   // red   -- additional color
+
+    // assign colors to the clusters (descending order for num of pixels assigned in each cluster)
+    vector<Vec3b> sortedClusterColors(k);
+    for (int i = 0; i < k; i++)
+        sortedClusterColors[clusterCounts[i].second] = clusterColors[i];
+
+    // create output image
+    Mat output(src.size(), CV_8UC3);
     for (int i = 0; i < src.rows * src.cols; i++)
-        output.at<cv::Vec3b>(i / src.cols, i % src.cols) = cluster_colors[labels[i]];
+        output.at<Vec3b>(i / (src.cols), i % (src.cols)) = sortedClusterColors[labels[i]];
 
     return output;
 }
