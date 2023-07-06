@@ -52,17 +52,23 @@ int main(int argc, char **argv)
     std::vector<int> dishesMatches;
     doHough(dishes, dishesMatches, in1);
 
+    /* 1st method:
+        Detect and Recognize Objects
+    */
+
     cv::Mat final = in1.clone();
     detectAndRecognize(dishes, templates,
                        dishesMatches, in1, final, result);
 
+    /* 2nd method:
+        Detect and Recognize Objects
+    */
     std::vector<cv::Rect> mser_boxes;
     for (int d = 0; d < dishes.size(); d++)
     {
         // FILTERS
         cv::Mat src = dishes[d];
-        cv::Mat shifted,
-            bilateral;
+        cv::Mat shifted, bilateral;
         bilateralFilter(src, shifted, 1, 0.5, 0.5);
         cv::pyrMeanShiftFiltering(src, shifted, 25, 200);
         // showImg("PyrMean", shifted);
@@ -102,6 +108,11 @@ int main(int argc, char **argv)
         }
     }
 
+    /*
+        Compute probability for objects
+    */
+    // computeProbability();
+
     return 0;
 }
 
@@ -121,12 +132,8 @@ void detectAndRecognize(std::vector<cv::Mat> &dishes, std::vector<cv::Mat> &temp
         cout << "finito di cercare i match" << endl;
         int max_key = 0;
         for (int i = 0; i < dishesMatches.size(); i++)
-        {
             if (dishesMatches[i] > dishesMatches[max_key])
-            {
                 max_key = i;
-            }
-        }
         cout << "trovato il piatto con più match" << endl;
         if (dishesMatches[max_key] > 0)
         {
@@ -139,17 +146,18 @@ void detectAndRecognize(std::vector<cv::Mat> &dishes, std::vector<cv::Mat> &temp
 
 void computeSegmentArea(SegmentAreas &sa)
 {
-    Mat maskYellow, maskBlue, maskGreen, maskRed;
+    Mat maskYellow, maskBlue, maskGreen, maskRed, maskBlack;
     inRange(sa.p1, Scalar(0, 250, 250), Scalar(0, 255, 255), maskYellow);
     inRange(sa.p1, Scalar(250, 0, 0), Scalar(255, 0, 0), maskBlue);
     inRange(sa.p1, Scalar(0, 250, 0), Scalar(0, 255, 0), maskGreen);
     inRange(sa.p1, Scalar(0, 0, 250), Scalar(0, 0, 255), maskRed);
+    inRange(sa.p1, Scalar(0, 0, 0), Scalar(10, 10, 10), maskBlack);
 
     sa.areaYellow = countNonZero(maskYellow);
     sa.areaBlue = countNonZero(maskBlue);
     sa.areaGreen = countNonZero(maskGreen);
     sa.areaRed = countNonZero(maskRed);
-    sa.areaBlack = sa.p1.rows + sa.p1.cols - (sa.areaBlue + sa.areaGreen + sa.areaRed + sa.areaYellow);
+    sa.areaBlack = countNonZero(maskBlack);
 }
 
 void computeProbability(BoxLabel &box)
