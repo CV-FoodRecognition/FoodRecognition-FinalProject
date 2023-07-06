@@ -162,7 +162,7 @@ void removeBackground(cv::Mat &src)
 cv::Mat kmeansSegmentation(int k, cv::Mat &src)
 {
     // Pyramidal Filtering with Mean Shift to have a CARTOONISH effect on input image
-    cv::pyrMeanShiftFiltering(src, src, 18, 150);
+    // cv::pyrMeanShiftFiltering(src, src, 18, 150);
     // showImg("Cartoonish (MeanShift Filter)", shifted);
 
     std::vector<int> labels;

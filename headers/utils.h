@@ -54,7 +54,7 @@ bool isInsideCircle(cv::Vec3i c, int x, int y);
 void showImg(std::string title, cv::Mat image);
 void sharpenImg(cv::Mat &src, SharpnessType t);
 cv::Mat convertGray(cv::Mat &src);
-cv::Mat removeDish(cv::Mat &shifted);
+void removeDish(cv::Mat &shifted);
 double computeArea(cv::Rect box);
 
 #endif // UTILS_H

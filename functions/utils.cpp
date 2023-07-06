@@ -31,7 +31,7 @@ double computeArea(cv::Rect box)
     return box.width * box.height;
 }
 
-cv::Mat removeDish(cv::Mat &src)
+void removeDish(cv::Mat &src)
 {
     for (int k = 255; k > 20; k = k - 5)
     {

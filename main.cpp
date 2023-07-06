@@ -58,11 +58,11 @@ int main(int argc, char **argv)
     /* 1st method:
         Detect and Recognize Objects
     */
-    showImg("0", templates[0]);
-    showImg("1", templates[1]);
+    // showImg("0", templates[0]);
+    // showImg("1", templates[1]);
 
     cv::Mat final = in1.clone();
-    detectAndRecognize(dishes, templates, dishesMatches, in1, final, result);
+    // detectAndRecognize(dishes, templates, dishesMatches, in1, final, result);
 
     /*  2nd method:
         Detect and Recognize Objects
@@ -74,26 +74,33 @@ int main(int argc, char **argv)
         cv::Mat src = dishes[d];
         cv::Mat shifted, bilateral;
         bilateralFilter(src, shifted, 1, 0.5, 0.5);
-        cv::pyrMeanShiftFiltering(src, shifted, 25, 200);
+        cv::pyrMeanShiftFiltering(src, shifted, 40, 200);
         // showImg("PyrMean", shifted);
         removeDish(shifted);
-        sharpenImg(shifted, SharpnessType::HIGHPASS);
+        // sharpenImg(shifted, SharpnessType::LAPLACIAN);
 
         // CALLBACK
-        namedWindow(window_name);
+        /* namedWindow(window_name);
         PassedStruct *ps = new PassedStruct;
         ps->p1 = shifted;
         ps->p2 = to_string(d);
         createTrackbar("K trackbar", window_name, NULL, max_k, onTrackbar, ps);
         onTrackbar(2, ps);
         waitKey(0);
-        delete ps;
+        delete ps; */
+        showImg("Choose a K for KMeans", shifted);
+        int k;
+        cout << "Choose a K KMeans: ";
+        cin >> k;
+        cv::Mat r = kmeansSegmentation(k, shifted);
+        showImg(to_string(k), r);
+        imwrite("../images/Results/kmeansResult" + to_string(d) + ".jpg", r);
     }
 
     // READING RESULTS
     for (int d = 0; d < dishes.size(); d++)
     {
-        Mat segmentedImg = imread("../images/Results/kmeansResult" + to_string(d) + ".jpg", CV_8UC3);
+        Mat segmentedImg = imread("../images/Results/kmeansResult" + to_string(d) + ".jpg", CV_32F);
         segmentedImages.push_back(segmentedImg);
     }
 
@@ -156,10 +163,10 @@ void detectAndRecognize(std::vector<cv::Mat> &dishes, std::vector<cv::Mat> &temp
 void computeSegmentArea(SegmentAreas &sa)
 {
     Mat maskYellow, maskBlue, maskGreen, maskRed, maskBlack;
-    inRange(sa.p1, Scalar(0, 250, 250), Scalar(0, 255, 255), maskYellow);
-    inRange(sa.p1, Scalar(250, 0, 0), Scalar(255, 0, 0), maskBlue);
-    inRange(sa.p1, Scalar(0, 250, 0), Scalar(0, 255, 0), maskGreen);
-    inRange(sa.p1, Scalar(0, 0, 250), Scalar(0, 0, 255), maskRed);
+    inRange(sa.p1, Scalar(0, 255, 255), Scalar(0, 255, 255), maskYellow);
+    inRange(sa.p1, Scalar(255, 0, 0), Scalar(255, 0, 0), maskBlue);
+    inRange(sa.p1, Scalar(0, 255, 0), Scalar(0, 255, 0), maskGreen);
+    inRange(sa.p1, Scalar(0, 0, 255), Scalar(0, 0, 255), maskRed);
     inRange(sa.p1, Scalar(0, 0, 0), Scalar(10, 10, 10), maskBlack);
 
     sa.areaYellow = countNonZero(maskYellow);
