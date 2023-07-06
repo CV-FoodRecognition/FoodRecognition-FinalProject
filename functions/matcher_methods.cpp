@@ -37,12 +37,18 @@ void bruteForceHammingSorted(cv::Mat img1, cv::Mat img2, Result res)
 
 int bruteForceKNN(cv::Mat img1, cv::Mat img2, Result res, cv::Mat &final)
 {
+    std::cout << "inizo\n";
+
     img1.convertTo(img1, CV_8U);
     img2.convertTo(img2, CV_8U);
+
+    std::cout << "conversion images\n";
 
     cv::BFMatcher bf;
     std::vector<std::vector<cv::DMatch>> matches;
     bf.knnMatch(res.descriptor1, res.descriptor2, matches, 2);
+
+    std::cout << "knnMatches\n";
 
     std::vector<cv::DMatch> goodMatches;
     for (const auto &match : matches)
@@ -53,8 +59,12 @@ int bruteForceKNN(cv::Mat img1, cv::Mat img2, Result res, cv::Mat &final)
         }
     }
 
+    std::cout << "goodMatches";
+
     cv::Mat imgMatches;
     cv::drawMatches(img1, res.kp1, img2, res.kp2, goodMatches, imgMatches);
+
+    std::cout << "draw matches\n";
 
     int x = final.cols;
     int y = final.rows;

@@ -34,8 +34,8 @@ int main(int argc, char **argv)
     std::vector<std::string> labels;
 
     // READ TEMPLATES
-    Mat templ_fagioli = cv::imread("images/Train/fagioli.jpg", cv::IMREAD_GRAYSCALE);
-    Mat templ_conchiglie = cv::imread("images/Train/conchiglie.jpg", cv::IMREAD_GRAYSCALE);
+    Mat templ_fagioli = cv::imread("../images/Train/beans.jpg", cv::IMREAD_GRAYSCALE);
+    Mat templ_conchiglie = cv::imread("../images/Train/conchiglie.jpg", cv::IMREAD_GRAYSCALE);
     templates.push_back(templ_fagioli);
     labels.push_back("fagioli");
     templates.push_back(templ_conchiglie);
@@ -52,15 +52,19 @@ int main(int argc, char **argv)
     std::vector<int> dishesMatches;
     doHough(dishes, dishesMatches, in1);
 
+    for (int i = 0; i < dishesMatches.size(); i++)
+        cout << dishesMatches[i];
+
     /* 1st method:
         Detect and Recognize Objects
     */
+    showImg("0", templates[0]);
+    showImg("1", templates[1]);
 
     cv::Mat final = in1.clone();
-    detectAndRecognize(dishes, templates,
-                       dishesMatches, in1, final, result);
+    detectAndRecognize(dishes, templates, dishesMatches, in1, final, result);
 
-    /* 2nd method:
+    /*  2nd method:
         Detect and Recognize Objects
     */
     std::vector<cv::Rect> mser_boxes;
@@ -124,9 +128,14 @@ void detectAndRecognize(std::vector<cv::Mat> &dishes, std::vector<cv::Mat> &temp
         cout << "inizio a cercare match" << endl;
         for (int i = 0; i < dishes.size(); i++)
         {
-            result = useDescriptor(dishes[i], templates[t], DescriptorType::SIFT);
-            cv::Mat some = Mat(in1.rows, in1.cols, CV_8UC3);
-            dishesMatches[i] = bruteForceKNN(dishes[i], templates[t], result, some);
+            std::cout << "result\n";
+
+            result = useDescriptor(dishes[i], templates[i], DescriptorType::SIFT);
+            std::cout << "result\n";
+            cv::Mat some = cv::Mat(in1.rows, in1.cols, CV_8UC3);
+            std::cout << "some\n";
+
+            dishesMatches[i] = bruteForceKNN(dishes[i], templates[i], result, some);
             std::cout << "matches dishes " << i << " : " << dishesMatches[i] << std::endl;
         }
         cout << "finito di cercare i match" << endl;

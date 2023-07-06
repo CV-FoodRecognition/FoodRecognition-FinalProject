@@ -21,14 +21,20 @@ Result useDescriptor(cv::Mat &img1, cv::Mat &img2, DescriptorType typ)
     Result res;
     if (det.empty())
         std::cout << "ERROR - det";
+
+    det->detectAndCompute(img1, cv::noArray(), res.kp1, res.descriptor1);
+    det->detectAndCompute(img2, cv::noArray(), res.kp2, res.descriptor2);
+
     if (res.kp1.empty())
         std::cout << "ERROR - kp1";
     if (res.kp2.empty())
         std::cout << "ERROR - kp2";
     if (res.descriptor1.empty())
-        std::cout << "ERROR - descriptor1";
+        std::cout << "ERROR - desc1";
     if (res.descriptor2.empty())
-        std::cout << "ERROR - descriptor2";
+        std::cout << "ERROR - desc2";
+
+    std::cout << "UseDescriptor\n";
 
     return res;
 }
