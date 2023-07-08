@@ -10,6 +10,7 @@ private:
     std::vector<cv::Mat> dishes;
     std::vector<int> dishesMatches;
     std::vector<cv::Rect> mser_bbox;
+    std::vector<std::vector<cv::Point>> regions;
 
 public:
     ImageProcessor() {}

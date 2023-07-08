@@ -24,9 +24,9 @@ void bruteForceHammingSorted(cv::Mat img1, cv::Mat img2, Result res)
     showImg(file, imgMatches);
 }
 
-int bruteForceKNN(cv::Mat img1, cv::Mat img2, Result res, cv::Mat &final)
+void bruteForceKNN(cv::Mat img1, cv::Mat templateImage, Result res, cv::Mat &final)
 {
-    checkType(img1, img2, res);
+    checkType(img1, templateImage, res);
 
     // Brute Force KNN Match
     cv::BFMatcher bf;
@@ -41,14 +41,37 @@ int bruteForceKNN(cv::Mat img1, cv::Mat img2, Result res, cv::Mat &final)
 
     // Drawing best Matches
     cv::Mat imgMatches;
-    cv::drawMatches(img1, res.kp1, img2, res.kp2, goodMatches, imgMatches);
+    cv::drawMatches(img1, res.kp1, templateImage, res.kp2, goodMatches, imgMatches);
 
     computeMinMaxCoordinates(final, goodMatches, res);
 
     // SAVING RESULT
     std::string file = "KNN - Matching - SIFT.png";
-    showImg(file, final); // or imgMatches????
-                          // DOUBT HERE !!!!
+    showImg(file, final);
+}
+
+int bruteForceKNN(cv::Mat img1, cv::Mat templateImage, Result res)
+{
+    checkType(img1, templateImage, res);
+
+    // Brute Force KNN Match
+    cv::BFMatcher bf;
+    std::vector<std::vector<cv::DMatch>> matches;
+    bf.knnMatch(res.descriptor1, res.descriptor2, matches, 2);
+
+    // Taking best Matches
+    std::vector<cv::DMatch> goodMatches;
+    for (const auto &match : matches)
+        if (match[0].distance < 0.7 * match[1].distance)
+            goodMatches.push_back(match[0]);
+
+    // Drawing best Matches
+    cv::Mat imgMatches;
+    cv::drawMatches(img1, res.kp1, templateImage, res.kp2, goodMatches, imgMatches);
+
+    // SAVING RESULT
+    std::string file = "KNN - Matching - SIFT.png";
+    showImg(file, imgMatches);
 
     return goodMatches.size();
 }

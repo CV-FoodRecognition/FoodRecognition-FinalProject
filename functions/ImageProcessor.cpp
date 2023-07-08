@@ -48,17 +48,19 @@ void ImageProcessor::doHough(cv::Mat &in)
 
 void ImageProcessor::doMSER(cv::Mat &shifted, cv::Mat &result)
 {
+    std::cout << "1 start" << std::endl;
+    cv::Mat cloneShifted = shifted.clone();
     cv::Ptr<cv::MSER> ms = cv::MSER::create();
-    std::vector<std::vector<cv::Point>> regions;
-    ms->detectRegions(shifted, regions, mser_bbox);
+    ms->detectRegions(cloneShifted, regions, mser_bbox);
+    std::cout << "2 detection" << std::endl;
 
     for (int i = 0; i < regions.size(); i++)
     {
-        cv::rectangle(shifted, mser_bbox[i], CV_RGB(0, 255, 0));
-
+        cv::rectangle(cloneShifted, mser_bbox[i], CV_RGB(0, 255, 0));
         cv::Mat mask, bg, fg;
 
-        // grabCut(shifted, mask, mser_bbox[i], bg, fg, 1, GC_INIT_WITH_RECT);
+        std::cout << "3" << std::endl;
+
         cv::Rect rect = mser_bbox[i];
         int area = rect.width * rect.height;
         for (int i = rect.x; i < rect.x + rect.width; i++)
@@ -69,7 +71,9 @@ void ImageProcessor::doMSER(cv::Mat &shifted, cv::Mat &result)
                 result.at<cv::Vec3b>(cv::Point(i, j))[1] = 0;
                 result.at<cv::Vec3b>(cv::Point(i, j))[2] = 255;
             }
+            std::cout << "4" << std::endl;
         }
+        std::cout << "5 fine" << std::endl;
     }
 }
 

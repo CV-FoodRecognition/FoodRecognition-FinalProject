@@ -27,6 +27,22 @@ Scalar computeAvgColor(Mat shifted, Rect box)
     return avg_color;
 }
 
+Scalar computeAvgColor(Mat shifted)
+{
+    // Define lower and upper bounds for colors to include
+    Scalar lowerb = Scalar(15, 15, 15);
+    Scalar upperb = Scalar(240, 240, 240);
+
+    // Create mask to exclude colors outside of bounds
+    Mat mask;
+    inRange(shifted, lowerb, upperb, mask);
+    Scalar avg_color = mean(shifted, mask);
+    Mat image(100, 100, CV_8UC3, avg_color);
+    // showImg("average color", image);
+
+    return avg_color;
+}
+
 void equalizeHistogram(cv::Mat &src, cv::Mat &dst)
 {
     // Convert the image to the lab color space

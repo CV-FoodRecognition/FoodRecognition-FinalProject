@@ -54,8 +54,7 @@ int main(int argc, char **argv)
     const std::vector<int> &dishesMatches = imgProc.getDishesMatches();
     const std::vector<cv::Mat> &dishes = imgProc.getDishes();
 
-    for (int i = 0; i < dishesMatches.size(); i++)
-        cout << dishesMatches[i];
+    cout << dishesMatches.size();
 
     /* 1st method:
         Detect and Recognize Objects
@@ -69,7 +68,7 @@ int main(int argc, char **argv)
     /*  2nd method:
         Detect and Recognize Objects
     */
-    const std::vector<cv::Rect> &mserBbox = imgProc.getMserBbox();
+
     cv::Mat resMSER;
     for (int d = 0; d < dishes.size(); d++)
     {
@@ -82,8 +81,8 @@ int main(int argc, char **argv)
         removeDish(shifted);
         // sharpenImg(shifted, SharpnessType::LAPLACIAN);
 
-        // imgProc.doMSER(shifted, resMSER);
-        // showImg("MSER", resMSER);
+        imgProc.doMSER(shifted, resMSER);
+        showImg("MSER", resMSER);
 
         // CALLBACK
         /*namedWindow(window_name);
@@ -148,17 +147,16 @@ void detectAndRecognize(std::vector<cv::Mat> &dishes, std::vector<cv::Mat> &temp
 
             result = useDescriptor(dishes[i], templates[i], DescriptorType::SIFT);
             std::cout << "result\n";
-            cv::Mat some = cv::Mat(in1.rows, in1.cols, CV_8UC3);
             std::cout << "some\n";
 
-            dishesMatches[i] = bruteForceKNN(dishes[i], templates[i], result, some);
+            dishesMatches[i] = bruteForceKNN(dishes[i], templates[i], result);
             std::cout << "matches dishes " << i << " : " << dishesMatches[i] << std::endl;
         }
         cout << "finito di cercare i match" << endl;
         int max_key = 0;
         for (int i = 0; i < dishesMatches.size(); i++)
             if (dishesMatches[i] > dishesMatches[max_key])
-                max_key = i;
+                max_key = i; // maxkeys = indice piatto con più matches
         cout << "trovato il piatto con più match" << endl;
         if (dishesMatches[max_key] > 0)
         {
