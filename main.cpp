@@ -55,22 +55,18 @@ int main(int argc, char **argv)
     const std::vector<int> &dishesMatches = imgProc.getDishesMatches();
     const std::vector<cv::Mat> &dishes = imgProc.getDishes();
 
-<<<<<<< Updated upstream
-    cout << dishesMatches.size();
-=======
     // Read Leftover
     cv::Mat leftoverImg = cv::imread("../../images/leftover1.jpg", cv::IMREAD_COLOR);
 
     // Hough Transform 2
     ImageProcessor imgProcLeftovers;
     imgProcLeftovers.doHough(leftoverImg);
-    const std::vector<cv::Mat>& leftovers = imgProcLeftovers.getDishes();
->>>>>>> Stashed changes
+    const std::vector<cv::Mat> &leftovers = imgProcLeftovers.getDishes();
 
     /* 1st method:
         Detect and Recognize Objects
     */
-    // showImg("0", templates[0]); 
+    // showImg("0", templates[0]);
     // showImg("1", templates[1]);
 
     cv::Mat final = in1.clone();
@@ -126,11 +122,9 @@ int main(int argc, char **argv)
 
     cout << "XX" << endl;
 
-   computeLeftovers(removedDishes, leftovers);
+    computeLeftovers(removedDishes, leftovers);
 
     cout << "XXX" << endl;
-
-
 
     /*
         Compute probability for objects
