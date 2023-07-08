@@ -31,6 +31,11 @@ double computeArea(cv::Rect box)
     return box.width * box.height;
 }
 
+double computeCircleArea(double radius)
+{
+    return M_PI * radius * radius;
+}
+
 void removeDish(cv::Mat &src)
 {
     for (int k = 255; k > 20; k = k - 5)

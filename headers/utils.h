@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <opencv2/opencv.hpp>
+#include <cmath>
 
 struct Result
 {
@@ -56,5 +57,6 @@ void sharpenImg(cv::Mat &src, SharpnessType t);
 cv::Mat convertGray(cv::Mat &src);
 void removeDish(cv::Mat &shifted);
 double computeArea(cv::Rect box);
+double computeCircleArea(double radius);
 
 #endif // UTILS_H

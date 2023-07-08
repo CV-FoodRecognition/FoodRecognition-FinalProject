@@ -20,15 +20,15 @@ void computeLeftovers(std::vector<cv::Mat> &removedDishes, const std::vector<cv:
     std::vector<cv::Mat> removedLeftovers;
     for (int d = 0; d < leftovers.size(); d++)
     {
-        cv::Mat src = leftovers[d];
+        cv::Mat rmvDish = leftovers[d];
         cv::Mat shifted, bilateral;
-        bilateralFilter(src, shifted, 1, 0.5, 0.5);
-        cv::pyrMeanShiftFiltering(shifted, shifted, 40, 200);
-        // showImg("PyrMean", shifted);
-        removeDish(shifted);
-        sharpenImg(shifted, SharpnessType::LAPLACIAN);
+        // bilateralFilter(src, shifted, 1, 0.5, 0.5);
+        // cv::pyrMeanShiftFiltering(shifted, shifted, 40, 200);
+        //  showImg("PyrMean", shifted);
+        removeDish(rmvDish);
+        sharpenImg(rmvDish, SharpnessType::LAPLACIAN);
 
-        removedLeftovers.push_back(shifted);
+        removedLeftovers.push_back(rmvDish);
     }
 
     std::cout << "AA" << endl;
@@ -139,6 +139,10 @@ void firstLevel()
 {
 }
 
-void secondLevel() {}
+void secondLevel()
+{
+}
 
-void thirdLevel() {}
+void thirdLevel()
+{
+}

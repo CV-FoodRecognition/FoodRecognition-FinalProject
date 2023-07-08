@@ -56,7 +56,7 @@ int main(int argc, char **argv)
     const std::vector<cv::Mat> &dishes = imgProc.getDishes();
 
     // Read Leftover
-    cv::Mat leftoverImg = cv::imread("../../images/leftover1.jpg", cv::IMREAD_COLOR);
+    cv::Mat leftoverImg = cv::imread("../images/leftover1.jpg", cv::IMREAD_COLOR);
 
     // Hough Transform 2
     ImageProcessor imgProcLeftovers;
@@ -83,7 +83,7 @@ int main(int argc, char **argv)
     {
         // FILTERS
         cv::Mat src = dishes[d];
-        cv::Mat rmvDish = leftovers[d];
+        cv::Mat rmvDish = dishes[d];
         cv::Mat shifted;
         bilateralFilter(src, shifted, 1, 0.5, 0.5);
         cv::pyrMeanShiftFiltering(shifted, shifted, 40, 200);
@@ -96,8 +96,8 @@ int main(int argc, char **argv)
         removedDishes.push_back(rmvDish);
         showImg("Image", rmvDish);
 
-        imgProc.doMSER(shifted, resMSER);
-        showImg("MSER", resMSER);
+        // imgProc.doMSER(shifted, resMSER);
+        // showImg("MSER", resMSER);
 
         // CALLBACK
         /*namedWindow(window_name);
@@ -122,9 +122,31 @@ int main(int argc, char **argv)
 
     cout << "XX" << endl;
 
+    /* // READING RESULTS
+   for (int d = 0; d < dishes.size(); d++)
+   {
+       Mat segmentedImg = imread("../images/Results/kmeansResult" + to_string(d) + ".jpg", CV_32F);
+       segmentedImages.push_back(segmentedImg);
+   } */
+
     computeLeftovers(removedDishes, leftovers);
 
     cout << "XXX" << endl;
+
+    // SEGMENTATION
+    /* for (int i = 0; i < segmentedImages.size(); i++)
+    {
+        if (segmentedImages[i].data)
+        {
+            SegmentAreas sa;
+            sa.p1 = segmentedImages[i];
+            showImg("aa", sa.p1);
+            computeSegmentArea(sa);
+            cout << "Area Blu: " << sa.areaBlue << "\nArea gialla: " << sa.areaYellow
+                 << "\nArea verde: " << sa.areaGreen << "\nArea rossa: " << sa.areaRed
+                 << "\nArea nera: " << sa.areaBlack << endl;
+        }
+    } */
 
     /*
         Compute probability for objects
