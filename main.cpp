@@ -5,6 +5,7 @@
 #include "headers/utils.h"
 #include "headers/ImagePreprocessor.hpp"
 #include "headers/ImageProcessor.h"
+#include "headers/leftover.h"
 
 using namespace cv;
 using namespace std;
@@ -54,12 +55,22 @@ int main(int argc, char **argv)
     const std::vector<int> &dishesMatches = imgProc.getDishesMatches();
     const std::vector<cv::Mat> &dishes = imgProc.getDishes();
 
+<<<<<<< Updated upstream
     cout << dishesMatches.size();
+=======
+    // Read Leftover
+    cv::Mat leftoverImg = cv::imread("../../images/leftover1.jpg", cv::IMREAD_COLOR);
+
+    // Hough Transform 2
+    ImageProcessor imgProcLeftovers;
+    imgProcLeftovers.doHough(leftoverImg);
+    const std::vector<cv::Mat>& leftovers = imgProcLeftovers.getDishes();
+>>>>>>> Stashed changes
 
     /* 1st method:
         Detect and Recognize Objects
     */
-    // showImg("0", templates[0]);
+    // showImg("0", templates[0]); 
     // showImg("1", templates[1]);
 
     cv::Mat final = in1.clone();
@@ -70,16 +81,24 @@ int main(int argc, char **argv)
     */
 
     cv::Mat resMSER;
+
+    std::vector<cv::Mat> removedDishes;
     for (int d = 0; d < dishes.size(); d++)
     {
         // FILTERS
         cv::Mat src = dishes[d];
-        cv::Mat shifted, bilateral;
+        cv::Mat rmvDish = leftovers[d];
+        cv::Mat shifted;
         bilateralFilter(src, shifted, 1, 0.5, 0.5);
-        cv::pyrMeanShiftFiltering(src, shifted, 40, 200);
+        cv::pyrMeanShiftFiltering(shifted, shifted, 40, 200);
         // showImg("PyrMean", shifted);
         removeDish(shifted);
-        // sharpenImg(shifted, SharpnessType::LAPLACIAN);
+
+        removeDish(rmvDish);
+        sharpenImg(rmvDish, SharpnessType::LAPLACIAN);
+
+        removedDishes.push_back(rmvDish);
+        showImg("Image", rmvDish);
 
         imgProc.doMSER(shifted, resMSER);
         showImg("MSER", resMSER);
@@ -92,7 +111,7 @@ int main(int argc, char **argv)
         createTrackbar("K trackbar", window_name, NULL, max_k, onTrackbar, ps);
         onTrackbar(2, ps);
         waitKey(0);
-        delete ps;*/
+        delete ps;
 
         showImg("Choose a K for KMeans", shifted);
         int k;
@@ -102,30 +121,16 @@ int main(int argc, char **argv)
 
         cv::Mat r = imgProc.kmeansSegmentation(k, shifted);
         showImg(to_string(k), r);
-        imwrite("../images/Results/kmeansResult" + to_string(d) + ".jpg", r);
+        imwrite("../images/Results/kmeansResult" + to_string(d) + ".jpg", r); */
     }
 
-    // READING RESULTS
-    for (int d = 0; d < dishes.size(); d++)
-    {
-        Mat segmentedImg = imread("../images/Results/kmeansResult" + to_string(d) + ".jpg", CV_32F);
-        segmentedImages.push_back(segmentedImg);
-    }
+    cout << "XX" << endl;
 
-    // SEGMENTATION
-    for (int i = 0; i < segmentedImages.size(); i++)
-    {
-        if (segmentedImages[i].data)
-        {
-            SegmentAreas sa;
-            sa.p1 = segmentedImages[i];
-            showImg("aa", sa.p1);
-            computeSegmentArea(sa);
-            cout << "Area Blu: " << sa.areaBlue << "\nArea gialla: " << sa.areaYellow
-                 << "\nArea verde: " << sa.areaGreen << "\nArea rossa: " << sa.areaRed
-                 << "\nArea nera: " << sa.areaBlack << endl;
-        }
-    }
+   computeLeftovers(removedDishes, leftovers);
+
+    cout << "XXX" << endl;
+
+
 
     /*
         Compute probability for objects
