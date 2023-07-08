@@ -10,6 +10,7 @@ add_executable(main main.cpp headers/descriptor_methods.h
   functions/utils.cpp 
   functions/segmentation.cpp
   functions/descriptor_methods.cpp
+  functions/ImageProcessor.cpp
   functions/matcher_methods.cpp)
 target_link_libraries(main ${OpenCV_LIBS})
 

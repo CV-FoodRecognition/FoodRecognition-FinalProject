@@ -4,6 +4,7 @@
 #include "headers/segmentation.h"
 #include "headers/utils.h"
 #include "headers/ImagePreprocessor.hpp"
+#include "headers/ImageProcessor.h"
 
 using namespace cv;
 using namespace std;
@@ -48,9 +49,10 @@ int main(int argc, char **argv)
     }
 
     // Hough Transform
-    std::vector<cv::Mat> dishes;
-    std::vector<int> dishesMatches;
-    doHough(dishes, dishesMatches, in1);
+    ImageProcessor imgProc;
+    imgProc.doHough(in1);
+    const std::vector<int> &dishesMatches = imgProc.getDishesMatches();
+    const std::vector<cv::Mat> &dishes = imgProc.getDishes();
 
     for (int i = 0; i < dishesMatches.size(); i++)
         cout << dishesMatches[i];
@@ -67,7 +69,8 @@ int main(int argc, char **argv)
     /*  2nd method:
         Detect and Recognize Objects
     */
-    std::vector<cv::Rect> mser_boxes;
+    const std::vector<cv::Rect> &mserBbox = imgProc.getMserBbox();
+    cv::Mat resMSER;
     for (int d = 0; d < dishes.size(); d++)
     {
         // FILTERS
@@ -79,23 +82,26 @@ int main(int argc, char **argv)
         removeDish(shifted);
         // sharpenImg(shifted, SharpnessType::LAPLACIAN);
 
+        // imgProc.doMSER(shifted, resMSER);
+        // showImg("MSER", resMSER);
+
         // CALLBACK
-        /* namedWindow(window_name);
+        /*namedWindow(window_name);
         PassedStruct *ps = new PassedStruct;
         ps->p1 = shifted;
         ps->p2 = to_string(d);
         createTrackbar("K trackbar", window_name, NULL, max_k, onTrackbar, ps);
         onTrackbar(2, ps);
         waitKey(0);
-        delete ps; */
+        delete ps;*/
+
         showImg("Choose a K for KMeans", shifted);
         int k;
-        cout << "Choose a K KMeans: ";
+        cout << "Choose a K KMeans (max 5): ";
         cin >> k;
-
         k = min(5, k);
 
-        cv::Mat r = kmeansSegmentation(k, shifted);
+        cv::Mat r = imgProc.kmeansSegmentation(k, shifted);
         showImg(to_string(k), r);
         imwrite("../images/Results/kmeansResult" + to_string(d) + ".jpg", r);
     }
@@ -181,6 +187,14 @@ void computeSegmentArea(SegmentAreas &sa)
 
 void computeProbability(BoxLabel &box)
 {
+    // if box area is tot
+    // && avgColor is tot
+    // && box area on segmentation yellow
+
+    // if box area is tot
+    // && avgColor is tot
+    // && box area on segmentation blue
+
     Mat out;
     Scalar upperBound(200, 170, 180); // Lighter Part of Meat
     Scalar lowerBound(95, 80, 60);    // Darker Part of Meat
@@ -203,7 +217,7 @@ void computeProbability(BoxLabel &box)
         box.label = FoodType::Beans;
 }
 
-static void onTrackbar(int, void *user)
+/* static void onTrackbar(int, void *user)
 {
     PassedStruct &ps = *(PassedStruct *)user;
     cv::Mat src = ps.p1;
@@ -218,4 +232,4 @@ static void onTrackbar(int, void *user)
         imshow(window_name, out);
         imwrite("../images/Results/kmeansResult" + count + ".jpg", out);
     }
-}
+} */

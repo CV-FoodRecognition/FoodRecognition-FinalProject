@@ -16,5 +16,5 @@ cv::Mat meanShiftFunct(cv::Mat src);
 void removeShadows(cv::Mat &src, cv::Mat &dst);
 void removeBackground(cv::Mat &src);
 cv::Scalar computeAvgColor(cv::Mat shifted, cv::Rect box);
-bool isInside(std::vector<cv::Vec3f> circles, cv::Point center);
+// bool isInside(std::vector<cv::Vec3f> circles, cv::Point center);
 #endif
