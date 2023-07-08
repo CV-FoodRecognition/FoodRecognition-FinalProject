@@ -2,3 +2,5 @@
 .vscode/c_cpp_properties.json
 .vs/
 build/
+CMakeLists.txt
+CMakeLists.txt
