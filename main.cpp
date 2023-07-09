@@ -57,7 +57,7 @@ int main(int argc, char **argv)
     const std::vector<int> &radia1 = imgProc.getRadius();
 
     // Read Leftover
-    cv::Mat leftoverImg = cv::imread("../images/Leftovers/leftover1_3.jpg", cv::IMREAD_COLOR);
+    cv::Mat leftoverImg = cv::imread("../../images/Leftovers/leftover1_3.jpg", cv::IMREAD_COLOR);
 
     // Hough Transform 2
     ImageProcessor imgProcLeftovers;
