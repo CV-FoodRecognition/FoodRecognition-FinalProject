@@ -57,7 +57,7 @@ int main(int argc, char **argv)
     const std::vector<int> &radia1 = imgProc.getRadius();
 
     // Read Leftover
-    cv::Mat leftoverImg = cv::imread("../images/Leftovers/leftover1_2.jpg", cv::IMREAD_COLOR);
+    cv::Mat leftoverImg = cv::imread("../images/Leftovers/leftover1_3.jpg", cv::IMREAD_COLOR);
 
     // Hough Transform 2
     ImageProcessor imgProcLeftovers;
@@ -188,22 +188,6 @@ void detectAndRecognize(std::vector<cv::Mat> &dishes, std::vector<cv::Mat> &temp
             bruteForceKNN(in1, templates[t], result, final);
         }
     }
-}
-
-void computeSegmentArea(SegmentAreas &sa)
-{
-    Mat maskYellow, maskBlue, maskGreen, maskRed, maskBlack;
-    inRange(sa.p1, Scalar(0, 254, 254), Scalar(0, 255, 255), maskYellow);
-    inRange(sa.p1, Scalar(254, 0, 0), Scalar(255, 0, 0), maskBlue);
-    inRange(sa.p1, Scalar(0, 254, 0), Scalar(0, 255, 0), maskGreen);
-    inRange(sa.p1, Scalar(0, 0, 254), Scalar(0, 0, 255), maskRed);
-    inRange(sa.p1, Scalar(0, 0, 0), Scalar(10, 10, 10), maskBlack);
-
-    sa.areaYellow = countNonZero(maskYellow);
-    sa.areaBlue = countNonZero(maskBlue);
-    sa.areaGreen = countNonZero(maskGreen);
-    sa.areaRed = countNonZero(maskRed);
-    sa.areaBlack = countNonZero(maskBlack);
 }
 
 void computeProbability(BoxLabel &box)

@@ -71,7 +71,7 @@ int bruteForceKNN(cv::Mat img1, cv::Mat templateImage, Result res)
 
     // SAVING RESULT
     std::string file = "KNN - Matching - SIFT.png";
-    showImg(file, imgMatches);
+    // showImg(file, imgMatches);
 
     return goodMatches.size();
 }
