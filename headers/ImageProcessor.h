@@ -11,6 +11,7 @@ private:
     std::vector<int> dishesMatches;
     std::vector<cv::Rect> mser_bbox;
     std::vector<std::vector<cv::Point>> regions;
+    std::vector<int> radia;
 
 public:
     ImageProcessor() {}
@@ -22,6 +23,7 @@ public:
     const std::vector<cv::Mat> &getDishes() const { return dishes; }
     const std::vector<int> &getDishesMatches() const { return dishesMatches; }
     const std::vector<cv::Rect> &getMserBbox() const { return mser_bbox; }
+    const std::vector<int> &getRadius() const { return radia; }
 };
 
 // Helper Function for Hough

@@ -19,6 +19,7 @@ void ImageProcessor::doHough(cv::Mat &in)
         cv::Vec3i c = circles[k];
         cv::Point center = cv::Point(c[0], c[1]);
         int radius = c[2];
+        radia.push_back(radius);
 
         cv::Mat mask = cv::Mat::zeros(in.size(), CV_8UC1);
         cv::Mat dish = cv::Mat::zeros(in.size(), CV_8UC3);

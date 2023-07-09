@@ -54,14 +54,16 @@ int main(int argc, char **argv)
     imgProc.doHough(in1);
     const std::vector<int> &dishesMatches = imgProc.getDishesMatches();
     const std::vector<cv::Mat> &dishes = imgProc.getDishes();
+    const std::vector<int> &radia1 = imgProc.getRadius();
 
     // Read Leftover
-    cv::Mat leftoverImg = cv::imread("../images/leftover1.jpg", cv::IMREAD_COLOR);
+    cv::Mat leftoverImg = cv::imread("../images/Leftovers/leftover1_2.jpg", cv::IMREAD_COLOR);
 
     // Hough Transform 2
     ImageProcessor imgProcLeftovers;
     imgProcLeftovers.doHough(leftoverImg);
     const std::vector<cv::Mat> &leftovers = imgProcLeftovers.getDishes();
+    const std::vector<int> &radia2 = imgProcLeftovers.getRadius();
 
     /* 1st method:
         Detect and Recognize Objects
@@ -129,7 +131,7 @@ int main(int argc, char **argv)
        segmentedImages.push_back(segmentedImg);
    } */
 
-    computeLeftovers(removedDishes, leftovers);
+    computeLeftovers(removedDishes, leftovers, radia1, radia2);
 
     cout << "XXX" << endl;
 

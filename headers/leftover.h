@@ -7,25 +7,30 @@
 #include "../headers/segmentation.h"
 #include "../headers/utils.h"
 
-struct Couple
-{
-        cv::Mat leftover;
-        cv::Mat original;
-};
-
 // funzione gestore
-void computeLeftovers(std::vector<cv::Mat> &removedDishes, const std::vector<cv::Mat> &leftovers);
+void computeLeftovers(std::vector<cv::Mat> &removedDishes, const std::vector<cv::Mat> &leftovers,
+                      const std::vector<int> &radia1, const std::vector<int> &radia2);
 
-// first level
-void firstLevel();
+// uses all 3 measurments methods
+void jointPredictions(std::vector<std::pair<cv::Mat, cv::Mat>> minDists,
+                      std::vector<std::pair<cv::Mat, cv::Mat>> pairArea,
+                      std::vector<std::pair<cv::Mat, cv::Mat>> pairMatches);
 
-// second level
-void secondLevel();
+// measurments methods
+std::vector<std::pair<cv::Mat, cv::Mat>> coupleClosestElements(const std::vector<double> &circleAreasOriginal,
+                                                               const std::vector<double> &circleAreasLeftover,
+                                                               const std::vector<cv::Mat> &originals,
+                                                               const std::vector<cv::Mat> &leftovers);
 
-// third level
-void thirdLevel();
+std::pair<cv::Mat, cv::Mat> computeMax(const std::vector<int> &matches,
+                                       const std::vector<cv::Mat> &leftovers, const cv::Mat &original);
 
-Couple computeMax(int matches1, int matches2, int matches3, std::vector<cv::Mat> leftovers, const cv::Mat &original);
-Couple computeMax(int matches1, int matches2, std::vector<cv::Mat> leftovers, const cv::Mat &original);
+std::vector<std::pair<cv::Mat, cv::Mat>> minDistance(const std::vector<cv::Scalar> &avgOriginals,
+                                                     const std::vector<cv::Scalar> &avgLefts,
+                                                     const std::vector<cv::Mat> &originals,
+                                                     const std::vector<cv::Mat> &leftovers);
+
+// utils
+bool checkPairsEqual(const std::pair<cv::Mat, cv::Mat> &a, const std::pair<cv::Mat, cv::Mat> &b);
 
 #endif // LEFTOVER_H
