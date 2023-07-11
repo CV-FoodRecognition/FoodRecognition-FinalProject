@@ -16,7 +16,7 @@ int low_k = 1;
 
 void computeProbability(BoxLabel &box);
 void computeSegmentArea(SegmentAreas &sa);
-void detectAndRecognize(std::vector<cv::Mat> &dishes, std::vector<cv::Mat> &templates,
+void detectAndRecognize(std::vector<cv::Mat> &dishes, std::vector<foodTemplate> &templates,
                         std::vector<int> &dishesMatches, cv::Mat &in1, cv::Mat &final, Result &result);
 static void onTrackbar(int, void *user);
 
@@ -30,31 +30,24 @@ int main(int argc, char **argv)
 
     std::string nameFile = "../images/" + std::string(argv[1]);
     std::vector<cv::Mat> segmentedImages;
-    cv::Mat in1 = cv::imread(nameFile, CV_32F);
     Result result;
-    std::vector<cv::Mat> templates;
-    std::vector<std::string> labels;
+    std::vector<foodTemplate> templates;
 
-    // READ TEMPLATES
-    Mat templ_fagioli = cv::imread("../images/Train/beans.jpg", cv::IMREAD_GRAYSCALE);
-    Mat templ_conchiglie = cv::imread("../images/Train/conchiglie.jpg", cv::IMREAD_GRAYSCALE);
-    templates.push_back(templ_fagioli);
-    labels.push_back("fagioli");
-    templates.push_back(templ_conchiglie);
-    labels.push_back("pasta");
-
+    cv::Mat in1 = cv::imread(nameFile, CV_32F);
     if (!in1.data)
     {
         std::cerr << "ERROR on input image" << std::endl;
         return -1;
     }
 
+    addFood(2, "beans", "beans", 10, "../images/Train/", templates);
+
     // Hough Transform
     ImageProcessor imgProc;
     imgProc.doHough(in1);
-    const std::vector<int> &dishesMatches = imgProc.getDishesMatches();
-    const std::vector<cv::Mat> &dishes = imgProc.getDishes();
-    const std::vector<int> &radia1 = imgProc.getRadius();
+    std::vector<int> &dishesMatches = imgProc.getDishesMatches();
+    std::vector<cv::Mat> &dishes = imgProc.getDishes();
+    std::vector<int> &radia1 = imgProc.getRadius();
 
     // Read Leftover
     cv::Mat leftoverImg = cv::imread("../images/Leftovers/leftover1_3.jpg", cv::IMREAD_COLOR);
@@ -62,8 +55,8 @@ int main(int argc, char **argv)
     // Hough Transform 2
     ImageProcessor imgProcLeftovers;
     imgProcLeftovers.doHough(leftoverImg);
-    const std::vector<cv::Mat> &leftovers = imgProcLeftovers.getDishes();
-    const std::vector<int> &radia2 = imgProcLeftovers.getRadius();
+    std::vector<cv::Mat> &leftovers = imgProcLeftovers.getDishes();
+    std::vector<int> &radia2 = imgProcLeftovers.getRadius();
 
     /* 1st method:
         Detect and Recognize Objects
@@ -72,7 +65,6 @@ int main(int argc, char **argv)
     // showImg("1", templates[1]);
 
     cv::Mat final = in1.clone();
-    // detectAndRecognize(dishes, templates, dishesMatches, in1, final, result);
 
     /*  2nd method:
         Detect and Recognize Objects
@@ -96,7 +88,7 @@ int main(int argc, char **argv)
         sharpenImg(rmvDish, SharpnessType::LAPLACIAN);
 
         removedDishes.push_back(rmvDish);
-        showImg("Image", rmvDish);
+        // showImg("Image", rmvDish);
 
         // imgProc.doMSER(shifted, resMSER);
         // showImg("MSER", resMSER);
@@ -121,6 +113,9 @@ int main(int argc, char **argv)
         showImg(to_string(k), r);
         imwrite("../images/Results/kmeansResult" + to_string(d) + ".jpg", r); */
     }
+
+    detectAndRecognize(dishes, templates, dishesMatches, in1, final, result);
+    showImg("FINALE", final);
 
     cout << "XX" << endl;
 
@@ -158,34 +153,39 @@ int main(int argc, char **argv)
     return 0;
 }
 
-void detectAndRecognize(std::vector<cv::Mat> &dishes, std::vector<cv::Mat> &templates,
+void detectAndRecognize(std::vector<cv::Mat> &dishes, std::vector<foodTemplate> &templates,
                         std::vector<int> &dishesMatches, cv::Mat &in1, cv::Mat &final, Result &result)
 {
-    for (int t = 0; t < templates.size(); t++)
-    {
+    for (int f = 0; f < templates.size(); f++)
+    { // for every food
+        for (int d = 0; d < dishes.size(); d++)
+            dishesMatches[d] = 0;
+
         cout << "inizio a cercare match" << endl;
-        for (int i = 0; i < dishes.size(); i++)
-        {
-            std::cout << "result\n";
 
-            result = useDescriptor(dishes[i], templates[i], DescriptorType::SIFT);
-            std::cout << "result\n";
-            std::cout << "some\n";
-
-            dishesMatches[i] = bruteForceKNN(dishes[i], templates[i], result);
-            std::cout << "matches dishes " << i << " : " << dishesMatches[i] << std::endl;
+        for (int t = 0; t < templates[f].foodTemplates.size(); t++)
+        { // for every food template
+            for (int d = 0; d < dishes.size(); d++)
+            { // look for matches in every dish
+                result = useDescriptor(dishes[d], templates[f].foodTemplates[t], DescriptorType::SIFT);
+                dishesMatches[d] = dishesMatches[d] + bruteForceKNN(dishes[d], templates[f].foodTemplates[t], result);
+                std::cout << "matches dishes " << d << " : " << dishesMatches[d] << std::endl;
+            }
+            cout << "finito di cercare i match" << endl;
         }
-        cout << "finito di cercare i match" << endl;
         int max_key = 0;
-        for (int i = 0; i < dishesMatches.size(); i++)
-            if (dishesMatches[i] > dishesMatches[max_key])
-                max_key = i; // maxkeys = indice piatto con più matches
+        for (int d = 0; d < dishesMatches.size(); d++)
+        {
+            if (dishesMatches[d] > dishesMatches[max_key])
+            {
+                max_key = d;
+            }
+        }
         cout << "trovato il piatto con più match" << endl;
         if (dishesMatches[max_key] > 0)
         {
             cout << "match finale (quello più giusto)" << endl;
-            result = useDescriptor(dishes[max_key], templates[t], DescriptorType::SIFT);
-            bruteForceKNN(in1, templates[t], result, final);
+            bruteForceKNN(in1, templates[f], dishes[max_key], final);
         }
     }
 }

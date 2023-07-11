@@ -2,10 +2,13 @@
 
 void ImageProcessor::doHough(cv::Mat &in)
 {
-    cv::Mat in_gray;
+    cv::Mat in_gray, temp;
     cvtColor(in, in_gray, cv::COLOR_BGR2GRAY);
     in_gray.convertTo(in_gray, CV_8UC1);
     cv::GaussianBlur(in_gray, in_gray, cv::Size(7, 7), 1.5, 1.5, 4);
+
+    temp = in.clone();
+
     // Hough Circles per ottenere solo i piatti
     std::vector<cv::Vec3f> circles;
     cv::HoughCircles(in_gray, circles, cv::HOUGH_GRADIENT,
@@ -13,7 +16,6 @@ void ImageProcessor::doHough(cv::Mat &in)
                      150, 500); // min radius and max radius
 
     std::vector<cv::Vec3f> accepted_circles;
-
     for (int k = 0; k < circles.size(); k++)
     {
         cv::Vec3i c = circles[k];
@@ -24,24 +26,10 @@ void ImageProcessor::doHough(cv::Mat &in)
         cv::Mat mask = cv::Mat::zeros(in.size(), CV_8UC1);
         cv::Mat dish = cv::Mat::zeros(in.size(), CV_8UC3);
 
-        if (accepted_circles.size() == 0)
-        {
-            dishesMatches.push_back(0);
-            cv::circle(mask, center, radius, 255, -1);
-            cv::Mat mask_colored;
-            in.copyTo(mask_colored, mask);
-            dishes.push_back(mask_colored);
-            accepted_circles.push_back(c);
-        }
-        if (!isInside(accepted_circles, center))
-        {
-            dishesMatches.push_back(0);
-            cv::circle(mask, center, radius, 255, -1);
-            cv::Mat mask_colored;
-            in.copyTo(mask_colored, mask);
-            dishes.push_back(mask_colored);
-            accepted_circles.push_back(c);
-        }
+        acceptCircles(in, mask, temp,
+                      c, center, radius,
+                      accepted_circles,
+                      dishesMatches, dishes);
     }
     for (int i = 0; i < accepted_circles.size(); i++)
         cv::Vec3i c = accepted_circles[i];

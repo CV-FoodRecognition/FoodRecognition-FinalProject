@@ -22,6 +22,23 @@ void concatShowImg(std::string title, cv::Mat image1, cv::Mat image2)
     cv::waitKey(0);
 }
 
+void addFood(int size, std::string fileName, std::string label, int id,
+             std::string path, std::vector<foodTemplate> &templates)
+{
+    cv::Mat temp_template;
+    foodTemplate myFood;
+    for (int i = 1; i <= size; i++)
+    {
+        std::string file = path + fileName + std::to_string(i) + ".jpg";
+        temp_template = cv::imread(file, cv::IMREAD_GRAYSCALE);
+        myFood.foodTemplates.push_back(temp_template);
+        myFood.label = label;
+        myFood.id = id;
+    }
+    templates.push_back(myFood);
+    return;
+}
+
 std::string enumToString(FoodType label)
 {
     switch (label)
@@ -71,6 +88,37 @@ void removeDish(cv::Mat &src)
         cv::Mat mask;
         cv::inRange(src, cv::Scalar(k - 30, k - 30, k - 30), cv::Scalar(k, k, k), mask);
         src.setTo(cv::Scalar(0, 0, 0), mask);
+    }
+}
+
+void acceptCircles(cv::Mat &in, cv::Mat &mask, cv::Mat &temp,
+                   cv::Vec3i &c, cv::Point &center, int radius,
+                   std::vector<cv::Vec3f> &accepted_circles,
+                   std::vector<int> &dishesMatches, std::vector<cv::Mat> &dishes)
+{
+    if (accepted_circles.size() == 0)
+    {
+        dishesMatches.push_back(0);
+        cv::circle(mask, center, radius, 255, -1);
+        cv::Mat mask_colored;
+        in.copyTo(mask_colored, mask);
+        removeDish(mask_colored);
+        dishes.push_back(mask_colored);
+        accepted_circles.push_back(c);
+        cv::circle(temp, center, 1, cv::Scalar(255, 0, 0), 3, cv::LINE_AA);
+        cv::circle(temp, center, radius, cv::Scalar(0, 255, 0), 3, cv::LINE_AA);
+    }
+    if (!isInside(accepted_circles, center))
+    {
+        dishesMatches.push_back(0);
+        cv::circle(mask, center, radius, 255, -1);
+        cv::Mat mask_colored;
+        in.copyTo(mask_colored, mask);
+        removeDish(mask_colored);
+        dishes.push_back(mask_colored);
+        accepted_circles.push_back(c);
+        cv::circle(temp, center, 1, cv::Scalar(255, 0, 0), 3, cv::LINE_AA);
+        cv::circle(temp, center, radius, cv::Scalar(0, 255, 0), 3, cv::LINE_AA);
     }
 }
 

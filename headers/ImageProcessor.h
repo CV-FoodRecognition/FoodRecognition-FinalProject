@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <opencv2/opencv.hpp>
+#include "utils.h"
 
 class ImageProcessor
 {
@@ -20,10 +21,10 @@ public:
     void doMSER(cv::Mat &shifted, cv::Mat &result);
     cv::Mat kmeansSegmentation(int k, cv::Mat &src);
 
-    const std::vector<cv::Mat> &getDishes() const { return dishes; }
-    const std::vector<int> &getDishesMatches() const { return dishesMatches; }
-    const std::vector<cv::Rect> &getMserBbox() const { return mser_bbox; }
-    const std::vector<int> &getRadius() const { return radia; }
+    std::vector<cv::Mat> &getDishes() { return dishes; }
+    std::vector<int> &getDishesMatches() { return dishesMatches; }
+    std::vector<cv::Rect> &getMserBbox() { return mser_bbox; }
+    std::vector<int> &getRadius() { return radia; }
 };
 
 // Helper Function for Hough
