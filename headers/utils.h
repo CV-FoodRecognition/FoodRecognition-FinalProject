@@ -14,6 +14,12 @@ struct foodTemplate
     int id;
 };
 
+struct Couple
+{
+    cv::Mat original;
+    cv::Mat leftover;
+};
+
 struct Result
 {
     std::vector<cv::KeyPoint> kp1, kp2; // keypoints

@@ -5,7 +5,7 @@
 #include "headers/utils.h"
 #include "headers/ImagePreprocessor.hpp"
 #include "headers/ImageProcessor.h"
-#include "headers/leftover.h"
+#include "headers/Leftover.h"
 
 using namespace cv;
 using namespace std;
@@ -50,7 +50,7 @@ int main(int argc, char **argv)
     std::vector<int> &radia1 = imgProc.getRadius();
 
     // Read Leftover
-    cv::Mat leftoverImg = cv::imread("../../images/Leftovers/leftover1_3.jpg", cv::IMREAD_COLOR);
+    cv::Mat leftoverImg = cv::imread("../images/Leftovers/leftover1_3.jpg", cv::IMREAD_COLOR);
 
     // Hough Transform 2
     ImageProcessor imgProcLeftovers;
@@ -114,8 +114,8 @@ int main(int argc, char **argv)
         imwrite("../images/Results/kmeansResult" + to_string(d) + ".jpg", r); */
     }
 
-    detectAndRecognize(dishes, templates, dishesMatches, in1, final, result);
-    showImg("FINALE", final);
+    // detectAndRecognize(dishes, templates, dishesMatches, in1, final, result);
+    // showImg("FINALE", final);
 
     cout << "XX" << endl;
 
@@ -126,7 +126,8 @@ int main(int argc, char **argv)
        segmentedImages.push_back(segmentedImg);
    } */
 
-    computeLeftovers(removedDishes, leftovers, radia1, radia2);
+    Leftover leftover;
+    leftover.computeLeftovers(removedDishes, leftovers, radia1, radia2);
 
     cout << "XXX" << endl;
 

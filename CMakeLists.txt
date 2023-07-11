@@ -7,8 +7,8 @@ include_directories(headers)
 
 add_executable(main main.cpp headers/descriptor_methods.h
   headers/matcher_methods.h
+  functions/Leftover.cpp
   functions/utils.cpp 
-  functions/leftover.cpp
   functions/segmentation.cpp
   functions/descriptor_methods.cpp
   functions/ImageProcessor.cpp
