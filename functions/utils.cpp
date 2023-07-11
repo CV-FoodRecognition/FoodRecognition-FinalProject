@@ -59,7 +59,7 @@ double computeArea(cv::Rect box)
 
 double computeCircleArea(double radius)
 {
-    return M_PI * radius * radius;
+    return 3.1417 * radius * radius;
 }
 
 /*
