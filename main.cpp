@@ -6,6 +6,7 @@
 #include "headers/ImagePreprocessor.hpp"
 #include "headers/ImageProcessor.h"
 #include "headers/Leftover.h"
+#include "headers/metrics.h"
 
 using namespace cv;
 using namespace std;
@@ -239,3 +240,6 @@ void computeProbability(BoxLabel &box)
         imwrite("../images/Results/kmeansResult" + count + ".jpg", out);
     }
 } */
+
+
+    
