@@ -5,11 +5,15 @@
 
 using namespace std;
 
+//BoundingBox formed by the rect coordinates taken by the "bounding_boxes" files
+
 struct BoundingBox {
     int id;  //ID del cibo
     float x1, y1, x2, y2;  //Coordinate del rect
 };
 
+
+//Function that extract the ID and the coordinates
 std::vector<BoundingBox> parseGroundTruth(const std::string& filename) {
     std::vector<BoundingBox> groundTruth;
 
@@ -60,6 +64,7 @@ std::vector<BoundingBox> parseGroundTruth(const std::string& filename) {
 }
 
 
+//Function that returns the Intersection over Union parameter
 float get_iou(const BoundingBox& ground_truth, const BoundingBox& pred) {
     
     // Coordinates of the area of intersection
@@ -89,6 +94,8 @@ float get_iou(const BoundingBox& ground_truth, const BoundingBox& pred) {
     return iou;
 }
 
+
+//Function that returns the mean between all the ground truth bounding_boxes and the predicted one
 float get_meaniou(std::vector<BoundingBox>& groundTruth, std::vector<BoundingBox>& predictions)
 {
     float sumIOU = 0.0;
@@ -112,6 +119,19 @@ float get_meaniou(std::vector<BoundingBox>& groundTruth, std::vector<BoundingBox
 }
 
 
+//Function that returns the ratio between the "after" and "before" images
+double calculatePixelRatio(int pixelsAfterimg, int pixelsBeforeimg) {
+    
+    // Check if the number of pixels in the second area is zero to avoid division by zero
+    if (pixelsAfterimg == 0) {
+        std::cout << "Error: Division by zero." << std::endl;
+        return 0.0;
+    }
+
+    double ratio = double(pixelsAfterimg) / pixelsBeforeimg;
+
+    return ratio;
+}
 
 
 /*double calculateAveragePrecision(const std::vector<double> &results, const std::vector<double> &relevantDocs, double iouThreshold)
