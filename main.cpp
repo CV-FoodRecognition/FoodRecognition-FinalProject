@@ -22,25 +22,38 @@ static void onTrackbar(int, void *user);
 
 int main(int argc, char **argv)
 {
-    if (argc != 2)
+    if (argc != 3)
     {
-        std::cerr << "Usage: " << argv[0] << " <image_path>" << std::endl;
+        std::cerr << "Usage: " << argv[0] << " <image_path> <leftover_path>" << std::endl;
         return -1;
     }
 
-    std::string nameFile = "../images/" + std::string(argv[1]);
+    std::string nameFile1 = "../images/" + std::string(argv[1]);
+    std::string nameFile2 = "../images/Leftovers/" + std::string(argv[2]);
+
     std::vector<cv::Mat> segmentedImages;
     Result result;
     std::vector<foodTemplate> templates;
 
-    cv::Mat in1 = cv::imread(nameFile, CV_32F);
+    // Read Input
+    cv::Mat in1 = cv::imread(nameFile1, CV_32F);
     if (!in1.data)
     {
         std::cerr << "ERROR on input image" << std::endl;
         return -1;
     }
+    // Read Leftover
+    cv::Mat leftoverImg = cv::imread(nameFile2, cv::IMREAD_COLOR);
+    if (!leftoverImg.data)
+    {
+        std::cerr << "ERROR on leftover input image" << std::endl;
+        return -1;
+    }
 
     addFood(2, "beans", "beans", 10, "../images/Train/", templates);
+    addFood(0, "", "pasta with pesto", 1, "../images/Train/", templates);
+    addFood(0, "", "bread", 13, "../images/Train/", templates);
+    addFood(3, "pork", "grilled pork cutlet", 6, "../images/Train/", templates);
 
     // Hough Transform
     ImageProcessor imgProc;
@@ -48,9 +61,6 @@ int main(int argc, char **argv)
     std::vector<int> &dishesMatches = imgProc.getDishesMatches();
     std::vector<cv::Mat> &dishes = imgProc.getDishes();
     std::vector<int> &radia1 = imgProc.getRadius();
-
-    // Read Leftover
-    cv::Mat leftoverImg = cv::imread("../images/Leftovers/leftover1_3.jpg", cv::IMREAD_COLOR);
 
     // Hough Transform 2
     ImageProcessor imgProcLeftovers;
@@ -65,10 +75,6 @@ int main(int argc, char **argv)
     // showImg("1", templates[1]);
 
     cv::Mat final = in1.clone();
-
-    /*  2nd method:
-        Detect and Recognize Objects
-    */
 
     cv::Mat resMSER;
 
@@ -114,8 +120,8 @@ int main(int argc, char **argv)
         imwrite("../images/Results/kmeansResult" + to_string(d) + ".jpg", r); */
     }
 
-    // detectAndRecognize(dishes, templates, dishesMatches, in1, final, result);
-    // showImg("FINALE", final);
+    detectAndRecognize(dishes, templates, dishesMatches, in1, final, result);
+    showImg("FINALE", final);
 
     cout << "XX" << endl;
 
@@ -126,8 +132,8 @@ int main(int argc, char **argv)
        segmentedImages.push_back(segmentedImg);
    } */
 
-    Leftover leftover;
-    leftover.computeLeftovers(removedDishes, leftovers, radia1, radia2);
+    // Leftover leftover;
+    // leftover.computeLeftovers(removedDishes, leftovers, radia1, radia2);
 
     cout << "XXX" << endl;
 
@@ -157,6 +163,9 @@ int main(int argc, char **argv)
 void detectAndRecognize(std::vector<cv::Mat> &dishes, std::vector<foodTemplate> &templates,
                         std::vector<int> &dishesMatches, cv::Mat &in1, cv::Mat &final, Result &result)
 {
+    std::vector<int> forbidden;
+    std::vector<BoundingBox> boundingBoxes;
+
     for (int f = 0; f < templates.size(); f++)
     { // for every food
         for (int d = 0; d < dishes.size(); d++)
@@ -174,68 +183,39 @@ void detectAndRecognize(std::vector<cv::Mat> &dishes, std::vector<foodTemplate> 
             }
             cout << "finito di cercare i match" << endl;
         }
+
         int max_key = 0;
-        for (int d = 0; d < dishesMatches.size(); d++)
+        Scalar avgColor;
+        if (templates[f].id != 13)
         {
-            if (dishesMatches[d] > dishesMatches[max_key])
-            {
-                max_key = d;
-            }
+            max_key = computeBestDish(templates[f], dishes, dishesMatches);
+            avgColor = computeAvgColorHSV(dishes[max_key]);
         }
-        cout << "trovato il piatto con più match" << endl;
-        if (dishesMatches[max_key] > 0)
+
+        // cout << "trovato il piatto con più match" << endl;
+        // cout << "match finale (quello più giusto)" << endl;
+
+        if (templates[f].id == 1 && avgColor[0] > 30 && avgColor[0] < 50)
         {
-            cout << "match finale (quello più giusto)" << endl;
-            bruteForceKNN(in1, templates[f], dishes[max_key], final);
+            // pesto
+            boundPasta(dishes[max_key], final, templates[f].label, forbidden, max_key, boundingBoxes);
+            forbidden.push_back(max_key);
+        }
+        else if (templates[f].id == 2 && avgColor[0] > 0 && avgColor[0] < 11)
+        { // tomato
+            cout << "no" << endl;
+            boundPasta(dishes[max_key], final, templates[f].label, forbidden, max_key, boundingBoxes);
+            forbidden.push_back(max_key);
+        }
+        else if (templates[f].id == 13)
+        { // bread
+            boundBread(in1, dishes, final, boundingBoxes);
+        }
+        else if (templates[f].id > 4)
+        {
+            bruteForceKNN(in1, templates[f], dishes[max_key], final, boundingBoxes);
         }
     }
+    drawBoundingBoxes(final, boundingBoxes);
+    return;
 }
-
-void computeProbability(BoxLabel &box)
-{
-    // if box area is tot
-    // && avgColor is tot
-    // && box area on segmentation yellow
-
-    // if box area is tot
-    // && avgColor is tot
-    // && box area on segmentation blue
-
-    Mat out;
-    Scalar upperBound(200, 170, 180); // Lighter Part of Meat
-    Scalar lowerBound(95, 80, 60);    // Darker Part of Meat
-
-    bool inRange = true;
-    for (int i = 0; i < 3; i++)
-    {
-        if (box.averageBoxColor[i] < lowerBound[i] || box.averageBoxColor[i] > upperBound[i])
-        {
-            inRange = false;
-            break;
-        }
-    }
-
-    cout << inRange;
-
-    if (box.areaBox > 2000 && inRange)
-        box.label = FoodType::Meat;
-    else
-        box.label = FoodType::Beans;
-}
-
-/* static void onTrackbar(int, void *user)
-{
-    PassedStruct &ps = *(PassedStruct *)user;
-    cv::Mat src = ps.p1;
-    std::string count = ps.p2;
-
-    cv::Mat out;
-    cv::Mat srcCopy = src.clone();
-    int k = cv::getTrackbarPos("K trackbar", window_name);
-    if (k > 0)
-    {
-        out = kmeansSegmentation(k, srcCopy);
-        imshow(window_name, out);
-        imwrite("../images/Results/kmeansResult" + count + ".jpg", out);
-    }
-} */
