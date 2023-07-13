@@ -6,6 +6,7 @@
 #include "headers/ImagePreprocessor.hpp"
 #include "headers/ImageProcessor.h"
 #include "headers/Leftover.h"
+#include "headers/metrics.h"
 
 using namespace cv;
 using namespace std;
@@ -94,6 +95,9 @@ int main(int argc, char **argv)
         sharpenImg(rmvDish, SharpnessType::LAPLACIAN);
 
         removedDishes.push_back(rmvDish);
+
+        int pixelCount = cv::countNonZero(rmvDish);
+
         // showImg("Image", rmvDish);
 
         // imgProc.doMSER(shifted, resMSER);

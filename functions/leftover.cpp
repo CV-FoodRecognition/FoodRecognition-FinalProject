@@ -1,7 +1,7 @@
-#include "../headers/leftover.h"
+#include "../headers/Leftover.h"
 
-void computeLeftovers(std::vector<cv::Mat> &removedDishes, const std::vector<cv::Mat> &leftovers,
-                      const std::vector<int> &radia1, const std::vector<int> &radia2)
+void Leftover::computeLeftovers(std::vector<cv::Mat> &removedDishes, const std::vector<cv::Mat> &leftovers,
+                                const std::vector<int> &radia1, const std::vector<int> &radia2)
 {
     Result res1, res2, res3;
     bool hasThreeOriginals = removedDishes.size() == 3;
@@ -42,26 +42,28 @@ void computeLeftovers(std::vector<cv::Mat> &removedDishes, const std::vector<cv:
     std::cout << "average leftover colors " << std::endl;
 
     // Vectors of average colors for 1 and 2
-    std::vector<cv::Scalar> avgOriginals = {avgOriginal1, avgOriginal2};
-    std::vector<cv::Scalar> avgLefts = {avgLeft1, avgLeft2};
+    avgOriginals = {avgOriginal1, avgOriginal2};
+    avgLefts = {avgLeft1, avgLeft2};
 
     // IF ORIGINAL DISHES ARE THREE...
     cv::Mat original3, left3;
     cv::Scalar avgOriginal3, avgLeft3;
-    if (hasThreeOriginals && hasThreeLeftovers)
+    // 3 ORIGINALS
+    if (hasThreeOriginals)
     {
         original3 = removedDishes[2];
         avgOriginal3 = computeAvgColor(original3);
+        avgOriginals.push_back(avgOriginal3);
+    }
+    // 3 LEFTOVERS
+    if (hasThreeLeftovers)
+    {
         left3 = removedLeftovers[2];
         avgLeft3 = computeAvgColor(left3);
-        avgOriginals.push_back(avgOriginal3);
         avgLefts.push_back(avgLeft3);
     }
 
-    std::vector<double> circleAreasOriginal; // area cerchi ORIGINALI
-    std::vector<double> circleAreasLeftover; // area cerchi LEFTOVER
-    std::vector<int> matches;                // vector of matches
-    std::vector<Couple> pairMatches;
+    std::vector<int> matches; // vector of matches
     /*
         For every circle in removedDishes (original dishes):
             - compute SIFT with the three leftover dishes with index 0,1,2
@@ -94,9 +96,6 @@ void computeLeftovers(std::vector<cv::Mat> &removedDishes, const std::vector<cv:
         Couple tempPair = coupleMaxMatches(matches, removedLeftovers, removedDishes[i]);
         pairMatches.push_back(tempPair);
 
-        // showImg("original", tempPair.original);
-        // showImg("leftover", tempPair.leftover);
-
         double circleOriginal = computeCircleArea(radia1[i]);
         double circleLeftover = computeCircleArea(radia2[i]);
         circleAreasOriginal.push_back(circleOriginal);
@@ -107,49 +106,20 @@ void computeLeftovers(std::vector<cv::Mat> &removedDishes, const std::vector<cv:
     std::cout << "lenght areas leftovers: " << circleAreasLeftover.size() << std::endl;
 
     // COUPLE by AREA CIRCLE
-    std::vector<Couple> pairArea = coupleClosestElements(circleAreasOriginal, circleAreasLeftover,
-                                                         removedDishes, removedLeftovers);
+    pairArea = coupleClosestElements(removedDishes, removedLeftovers);
 
     // COUPLE by AVERAGE COLOR
-    std::vector<Couple> minDists = coupleMinAverageColor(avgOriginals, avgLefts,
-                                                         removedDishes, removedLeftovers);
+    minDists = coupleMinAverageColor(removedDishes, removedLeftovers);
 
     // COUPLE by SEGMENT COLORS
-    std::vector<Couple> pairSegments = coupleSegmentColors(removedDishes, removedLeftovers);
+    pairSegments = coupleSegmentColors(removedDishes, removedLeftovers);
 
-    for (int i = 0; i < pairArea.size(); i++)
-    {
-        cv::Mat original = pairArea[i].original;
-        cv::Mat leftover = pairArea[i].leftover;
-        concatShowImg("Pair Area", original, leftover);
-    }
-
-    for (int i = 0; i < minDists.size(); i++)
-    {
-        cv::Mat original = minDists[i].original;
-        cv::Mat leftover = minDists[i].leftover;
-        concatShowImg("Pair Color", original, leftover);
-    }
-
-    for (int i = 0; i < pairMatches.size(); i++)
-    {
-        cv::Mat original = pairMatches[i].original;
-        cv::Mat leftover = pairMatches[i].leftover;
-        concatShowImg("Pair Matches", original, leftover);
-    }
-
-    for (int i = 0; i < pairSegments.size(); i++)
-    {
-        cv::Mat original = pairSegments[i].original;
-        cv::Mat leftover = pairSegments[i].leftover;
-        concatShowImg("Pair Segments", original, leftover);
-    }
+    printVector(pairArea, "Pair Area");
+    printVector(minDists, "Pair Color");
+    printVector(pairMatches, "Pair Matches");
+    printVector(pairSegments, "Pair Segments");
 
     // jointPredictions(minDists, pairArea, pairMatches);
-
-    // check if 3 coupling methods have given the same output pairs
-    // if all 2 or 3 have given the same output pair, return it.
-    // if all 3 methods have given 3 different pairs, pick random pair.
 }
 
 /*
@@ -162,9 +132,7 @@ void computeLeftovers(std::vector<cv::Mat> &removedDishes, const std::vector<cv:
         - at least two couples are the same --> @returns: 66% majoritary couple
         - no couples are the same           --> @returns: a random prediction
 */
-void jointPredictions(std::vector<Couple> minDists,
-                      std::vector<Couple> pairArea,
-                      std::vector<Couple> pairMatches)
+void Leftover::jointPredictions()
 {
     // check if 3 coupling methods have given the same output pairs
     for (int i = 0; i < pairMatches.size(); i++)
@@ -211,7 +179,7 @@ void jointPredictions(std::vector<Couple> minDists,
     Computes Original and Leftover with similar yellow and blue area (computing kmeans with 2 segments)
     @returns: Pair of Original,Leftover images
 */
-std::vector<Couple> coupleSegmentColors(std::vector<cv::Mat> &originals, std::vector<cv::Mat> &leftovers)
+std::vector<Couple> Leftover::coupleSegmentColors(std::vector<cv::Mat> &originals, std::vector<cv::Mat> &leftovers)
 {
     ImageProcessor ip;
     std::vector<SegmentAreas> originalSegmentAreas;
@@ -259,8 +227,8 @@ std::vector<Couple> coupleSegmentColors(std::vector<cv::Mat> &originals, std::ve
     return result;
 }
 
-Couple coupleMaxMatches(const std::vector<int> &matches,
-                        std::vector<cv::Mat> &leftovers, const cv::Mat &original)
+Couple Leftover::coupleMaxMatches(const std::vector<int> &matches,
+                                  std::vector<cv::Mat> &leftovers, const cv::Mat &original)
 {
     if (matches[0] >= matches[1] && matches[0] >= matches[2])
     {
@@ -289,10 +257,8 @@ Couple coupleMaxMatches(const std::vector<int> &matches,
     Computes Original and Leftover with least difference in area of circle
     @returns: Pair of Original,Leftover image with the least difference in area of circle
 */
-std::vector<Couple> coupleClosestElements(const std::vector<double> &circleAreasOriginal,
-                                          const std::vector<double> &circleAreasLeftover,
-                                          const std::vector<cv::Mat> &originals,
-                                          const std::vector<cv::Mat> &leftovers)
+std::vector<Couple> Leftover::coupleClosestElements(const std::vector<cv::Mat> &originals,
+                                                    const std::vector<cv::Mat> &leftovers)
 {
     std::vector<Couple> result;
     for (int i = 0; i < circleAreasOriginal.size(); i++)
@@ -322,10 +288,8 @@ std::vector<Couple> coupleClosestElements(const std::vector<double> &circleAreas
     Computes minDistance between average colors of the images
     @returns: Pair of Original,Leftover image with the least distance of mean average color
 */
-std::vector<Couple> coupleMinAverageColor(const std::vector<cv::Scalar> &avgOriginals,
-                                          const std::vector<cv::Scalar> &avgLefts,
-                                          const std::vector<cv::Mat> &originals,
-                                          const std::vector<cv::Mat> &leftovers)
+std::vector<Couple> Leftover::coupleMinAverageColor(const std::vector<cv::Mat> &originals,
+                                                    const std::vector<cv::Mat> &leftovers)
 {
     std::vector<Couple> result;
     for (int i = 0; i < avgOriginals.size(); i++)
@@ -362,4 +326,10 @@ bool checkCouplesEqual(const Couple &a, const Couple &b)
     cv::cvtColor(b.leftover, bLeftoverGray, cv::COLOR_BGR2GRAY);
 
     return cv::countNonZero(aOriginalGray != bOriginalGray) == 0 && cv::countNonZero(aLeftoverGray != bLeftoverGray) == 0;
+}
+
+void printVector(const std::vector<Couple> &pairs, const std::string &title)
+{
+    for (const auto &pair : pairs)
+        concatShowImg(title, pair.original, pair.leftover);
 }
