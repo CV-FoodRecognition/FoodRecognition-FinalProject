@@ -1,166 +1,54 @@
-void MatchingMethod(int, void *)
+
+void Leftover::allDishesDifferent(std::vector<Couple> &finalPairs, const std::vector<int> &counterVec)
 {
-    Mat img_display;
-    img_tm.copyTo(img_display);
-    for (int i = 0; i < templ_tm.size(); i++)
+    // Ensure that the same leftover is not predicted for both dishes
+    if (finalPairs.size() == 2 && checkCouplesEqual(finalPairs[0], finalPairs[1]))
     {
-        int result_cols = img_tm.cols - templ_tm[i].cols + 1;
-        int result_rows = img_tm.rows - templ_tm[i].rows + 1;
-        result_tm.create(result_rows, result_cols, CV_32FC1);
-        matchTemplate(img_tm, templ_tm[i], result_tm, TM_SQDIFF);
-        normalize(result_tm, result_tm, 0, 1, NORM_MINMAX, -1, Mat());
-        double minVal;
-        double maxVal;
-        Point minLoc;
-        Point maxLoc;
-        Point matchLoc;
-        minMaxLoc(result_tm, &minVal, &maxVal, &minLoc, &maxLoc, Mat());
-        matchLoc = minLoc;
-        // cout << minVal << endl;
-        rectangle(img_display, matchLoc, Point(matchLoc.x + templ_tm[i].cols, matchLoc.y + templ_tm[i].rows), Scalar(0, 0, 255), 2, 8, 0);
-        rectangle(result_tm, matchLoc, Point(matchLoc.x + templ_tm[i].cols, matchLoc.y + templ_tm[i].rows), Scalar(0, 0, 255), 2, 8, 0);
-        cv::putText(img_display, labels[i], cv::Point(matchLoc.x, matchLoc.y - 10), cv::FONT_HERSHEY_SIMPLEX, 0.9, cv::Scalar(0, 0, 255), 2);
-        imshow(image_window, img_display);
-        imshow(result_window, result_tm);
-    }
-    return;
-}
 
-// Template Matching
-bool use_mask = false;
-cv::Mat img_tm, templ_1, templ_2, templ_3;
-std::vector<cv::Mat> templ_tm;
-std::vector<std::string> labels;
-Mat mask;
-Mat result_tm;
-const char *image_window = "Source Image";
-const char *result_window = "Result window";
-int match_method;
-int max_Trackbar = 5;
-
-
-static void CannyThreshold(cv::Mat &in1, cv::Mat &in1_gray)
-{
-    cv::cvtColor(in1, in1_gray, cv::COLOR_BGR2GRAY);
-    cv::GaussianBlur(in1_gray, dst, cv::Size(kernel_size, kernel_size), 0, 0);
-    cv::Canny(dst, detected_edges, lowThreshold, max_lowThreshold);
-    dst = cv::Scalar::all(0);
-    in1.copyTo(dst, detected_edges);
-    cv::imshow(window_name, dst);
-}
-
-
-
-
-
-// create k masks and initialize to zeros
-std::vector<cv::Mat> masks(k);
-for (int i = 0; i < k; i++)
-    masks[i] = cv::Mat::zeros(src.size(), CV_8U);
-
-// colors pixels to 255
-for (int i = 0; i < src.rows * src.cols; i++)
-    masks[labels[i]].at<uchar>(i / src.cols, i % src.cols) = 255;
-
-// creates vector of k result image, 1 for each cluster
-std::vector<cv::Mat> results(k);
-for (int i = 0; i < k; i++)
-    src.copyTo(results[i], masks[i]);
-
-return results;
-}
-
-
-
-
-
-
-        cv::namedWindow(window_name);
-        PassedStruct *ps = new PassedStruct;
-        ps->p1 = shifted;
-        ps->p2 = to_string(d);
-        cv::createTrackbar("K trackbar", window_name, NULL, max_k, onTrackbar, ps);
-        onTrackbar(2, ps);
-        cv::waitKey(0);
-        cv::Mat res = ps->p1;
-        segmentedImages.push_back(res);
-        delete ps;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// COMMENTI
-
-
-        // templ_1 = cv::imread("../images/beans.jpg", IMREAD_COLOR);
-        // templ_tm.push_back(templ_1);
-
-        // namedWindow(image_window, WINDOW_AUTOSIZE);
-        // namedWindow(result_window, WINDOW_AUTOSIZE);
-        // Point matchLoc = MatchingMethod(0, 0);
-
-        // Blob detection
-        /* doMSER(mser_boxes, shifted, result);
-        // showImg("MSER", shifted);
-
-        for (int i = 0; i < mser_boxes.size(); i++)
+        if (counterVec[0] > counterVec[1])
         {
-            BoxLabel b;
-            b.averageBoxColor = computeAvgColor(shifted, mser_boxes[i]);
-            b.areaBox = computeArea(mser_boxes[i]);
+            for (const cv::Mat &o : originalDishes)
+            {
+                if (!areSameImage(finalPairs[0].original, o))
+                    finalPairs[1].original = o;
+            }
+            for (const cv::Mat &l : leftoverDishes)
+            {
+                if (!areSameImage(finalPairs[0].leftover, l))
+                    finalPairs[1].leftover = l;
+            }
+        }
+        else if (counterVec[0] < counterVec[1])
+        {
+            for (const cv::Mat &o : originalDishes)
+            {
+                if (!areSameImage(finalPairs[1].original, o))
+                    finalPairs[0].original = o;
+            }
+            for (const cv::Mat &l : leftoverDishes)
+            {
+                if (!areSameImage(finalPairs[1].leftover, l))
+                    finalPairs[0].leftover = l;
+            }
+        }
+        else
+        {
+            int randIndx = rand() % 2;
 
-            // cout << b.averageBoxColor[0] << " -- " << b.averageBoxColor[1] << " -- " << b.averageBoxColor[2] << endl;
+            for (const cv::Mat &o : originalDishes)
+            {
 
-            double similarityScore = SIFTfunctionRick() ;
-
-        // PROBAB.
-        //       *Computes probability that it is a food with : -avg color of box -
-        //   area of box - similarity score computed by template matching
-
-        // b.mser_box = mser_boxes[i];
-        // computeProbability(b);
-        // string label = enumToString(b.label);
-        // showImg("Mser Box " + label, shifted(b.mser_box));
-        //}
-        //}
-
-        // templ_1 = cv::imread("../images/BeansSIFT.jpg", IMREAD_COLOR);
-        //  templ_tm.push_back(templ_1);
-        //  labels.push_back("beans");
-
-        // namedWindow(image_window, WINDOW_AUTOSIZE);
-        // namedWindow(result_window, WINDOW_AUTOSIZE);
-        // MatchingMethod(0, 0);
-        // waitKey(0);
-
-        // SIFT ORB SURF
-
-        // Result descriptor = useDescriptor(in1, templ_1, DescriptorType::ORB); // change the descriptor type to use
-        //   SIFT or SURF
-        // bruteForceHammingSorted(in1, templ_1, descriptor);                    // Hamming for ORB only
-
-        // bruteForceKNN(in1, templ_1, descriptor); // KNN for SIFT and SURF
-
-
-
-        /* CONFRONTO FOTO
-         *   confronta le due foto per trovare quali cibi sono presenti nella seconda immagine (partendo da quelli della prima)
-         */
-
-        /* METRICHE
-         *   calcolo delle metriche
-         */
+                if (!areSameImage(finalPairs[0].original, o))
+                    finalPairs[randIndx].original = o;
+            }
+            for (const cv::Mat &l : leftoverDishes)
+            {
+                if (!areSameImage(finalPairs[0].leftover, l))
+                    finalPairs[randIndx].leftover = l;
+            }
+        }
+    }
+    else if (finalPairs.size() == 3 && (checkCouplesEqual(finalPairs[0], finalPairs[1]) || checkCouplesEqual(finalPairs[0], finalPairs[2]) || checkCouplesEqual(finalPairs[1], finalPairs[2])))
+    {
+    }
+}

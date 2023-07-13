@@ -26,6 +26,9 @@ void Leftover::computeLeftovers(std::vector<cv::Mat> &removedDishes, const std::
         removedLeftovers.push_back(rmvDish);
     }
 
+    originalDishes = removedDishes;
+    leftoverDishes = removedLeftovers;
+
     bool hasThreeLeftovers = removedLeftovers.size() == 3;
 
     std::cout << "original size " << removedDishes.size() << std::endl;
@@ -107,77 +110,104 @@ void Leftover::computeLeftovers(std::vector<cv::Mat> &removedDishes, const std::
 
     // COUPLE by AREA CIRCLE
     pairArea = coupleClosestElements(removedDishes, removedLeftovers);
+    std::cout << "c1" << std::endl;
 
     // COUPLE by AVERAGE COLOR
-    minDists = coupleMinAverageColor(removedDishes, removedLeftovers);
+    pairAvgColors = coupleMinAverageColor(removedDishes, removedLeftovers);
+    std::cout << "c2" << std::endl;
 
     // COUPLE by SEGMENT COLORS
     pairSegments = coupleSegmentColors(removedDishes, removedLeftovers);
+    std::cout << "c3" << std::endl;
 
-    printVector(pairArea, "Pair Area");
-    printVector(minDists, "Pair Color");
-    printVector(pairMatches, "Pair Matches");
-    printVector(pairSegments, "Pair Segments");
+    /* printVector(pairArea, "Pair Area");
+     printVector(pairAvgColors, "Pair Color");
+     printVector(pairMatches, "Pair Matches");
+     printVector(pairSegments, "Pair Segments"); */
 
-    // jointPredictions(minDists, pairArea, pairMatches);
+    jointPredictions();
 }
 
 /*
-    This function takes all the three output couples from:
-        - area comparison
-        - # of matches
+    jointPredictions() function takes all the output couples from:
+        - dish area comparison
+        - segmented dish area comparison
+        - number of matches applying SIFT
         - average color distance
     Then it checks if:
-        - all three couples are the same    --> @returns: 100% predicted couple
-        - at least two couples are the same --> @returns: 66% majoritary couple
-        - no couples are the same           --> @returns: a random prediction
+        - all four couples are the same     --> @returns: 100%  predicted couple
+        - three couples are the same        --> @returns: 75%   predicted couple
+        - two couples are the same
+          and two couples are different     --> @returns: 50%   predicted couple
+        - two couples are the same
+          and two couples are the same      --> @returns: the pair with the most similar average color
+        - no couples are the same           --> @returns: a random predicted couple
 */
 void Leftover::jointPredictions()
 {
-    // check if 3 coupling methods have given the same output pairs
+    std::vector<Couple> finalPairs;
+    std::vector<int> counterVec;
+
+    // FOR EVERY ORIGINAL DISH     -->     4 PREDICTED LEFTOVERS
+    // check how many predictions are the same
     for (int i = 0; i < pairMatches.size(); i++)
     {
-        // if all 2 or 3 have given the same output pair, return it.
-        if (checkCouplesEqual(pairMatches[i], minDists[i]) && checkCouplesEqual(pairMatches[i], pairArea[i]))
+        // initialize counter for equal results
+        int counterEquals = 0;
+        int m1 = 0, m2 = 0, m3 = 0;
+
+        // Count number of same results from all measurement methods
+        if (checkCouplesEqual(pairMatches[i], pairAvgColors[i]))
+            counterEquals += 1;
+        if (checkCouplesEqual(pairMatches[i], pairArea[i]))
+            counterEquals += 1;
+        if (checkCouplesEqual(pairMatches[i], pairSegments[i]))
+            counterEquals += 1;
+
+        // if all four couple are the same
+        if (counterEquals == 3)
+            finalPairs.push_back(pairMatches[i]);
+
+        // if three couples are the same
+        else if (counterEquals == 2)
+            finalPairs.push_back(pairMatches[i]);
+
+        // if two couples are the same and two different between each others
+        else if (counterEquals == 1)
         {
-            showImg("original", pairMatches[i].original);
-            showImg("leftover", pairMatches[i].leftover);
+            // The other two couples are equal but different from pairMatches
+            // There is 50% chance for both pairMatches[i] and two of the other metrics.
+            if (checkCouplesEqual(pairAvgColors[i], pairArea[i]) || checkCouplesEqual(pairAvgColors[i], pairSegments[i]) || checkCouplesEqual(pairArea[i], pairSegments[i]))
+            {
+                if (checkCouplesEqual(pairAvgColors[i], pairArea[i]) || checkCouplesEqual(pairAvgColors[i], pairSegments[i]))
+                    finalPairs.push_back(pairAvgColors[i]);
+                else
+                    finalPairs.push_back(pairSegments[i]);
+            }
+            // The other two couples are equal but different between each others
+            // it is still 50% chance that the predictions are good
+            else
+                finalPairs.push_back(pairMatches[i]);
         }
+        // if all couples are different -- Count == 0
+        else
+            finalPairs.push_back(pairAvgColors[i]);
+
+        counterVec.push_back(counterEquals);
     }
 
-    for (int i = 0; i < pairMatches.size(); i++)
-    {
-        // if two methods have given the same output pair, return it.
-        if (checkCouplesEqual(pairMatches[i], minDists[i]) || checkCouplesEqual(pairMatches[i], pairArea[i]) ||
-            checkCouplesEqual(pairArea[i], minDists[i]))
-        {
-            showImg("original", pairMatches[i].original);
-            showImg("leftover", pairMatches[i].leftover);
-        }
-    }
-
-    // if all 3 methods have given 3 different pairs, pick random pair.
-    std::vector<int> usedIndexes;
-    for (int i = 0; i < pairMatches.size(); i++)
-    {
-        int index;
-        do
-        {
-            index = rand() % pairMatches.size();
-        } while (std::find(usedIndexes.begin(), usedIndexes.end(), index) != usedIndexes.end());
-        usedIndexes.push_back(index);
-
-        Couple tempPair = pairMatches[index];
-        showImg("original", tempPair.original);
-        showImg("leftover", tempPair.leftover);
-    }
+    printVector(finalPairs, "Final Predictions");
 }
 
 // ------------------------------------------------------------------------------------------------------ //
-
 /*
-    Computes Original and Leftover with similar yellow and blue area (computing kmeans with 2 segments)
-    @returns: Pair of Original,Leftover images
+    Computes Original and Leftover with similar yellow area (computing kmeans with 2 segments -
+    where one is the background, black, one is the food in the dish, fixed to yellow)
+    @returns: vector of Couple of Original,Leftover images with similar areas in the dish
+
+    This metric is not very accurate because sometimes there might be no food left in the dish,
+    so the area will differ a lot.
+    But it can be used for leftover level 1, where the area stays similar.
 */
 std::vector<Couple> Leftover::coupleSegmentColors(std::vector<cv::Mat> &originals, std::vector<cv::Mat> &leftovers)
 {
@@ -185,7 +215,7 @@ std::vector<Couple> Leftover::coupleSegmentColors(std::vector<cv::Mat> &original
     std::vector<SegmentAreas> originalSegmentAreas;
     for (int i = 0; i < originals.size(); i++)
     {
-        cv::Mat segmentedOriginal = ip.kmeansSegmentation(3, originals[i]);
+        cv::Mat segmentedOriginal = ip.kmeansSegmentation(2, originals[i]);
         SegmentAreas sa;
         sa.p1 = segmentedOriginal;
         computeSegmentArea(sa);
@@ -195,7 +225,7 @@ std::vector<Couple> Leftover::coupleSegmentColors(std::vector<cv::Mat> &original
     std::vector<SegmentAreas> leftoverSegmentAreas;
     for (int i = 0; i < leftovers.size(); i++)
     {
-        cv::Mat segmentedLeftover = ip.kmeansSegmentation(3, leftovers[i]);
+        cv::Mat segmentedLeftover = ip.kmeansSegmentation(2, leftovers[i]);
         SegmentAreas sa;
         sa.p1 = segmentedLeftover;
         computeSegmentArea(sa);
@@ -210,9 +240,7 @@ std::vector<Couple> Leftover::coupleSegmentColors(std::vector<cv::Mat> &original
         int closestIndex = 0;
         for (int j = 0; j < leftoverSegmentAreas.size(); j++)
         {
-            double distance = std::abs(originalSegmentAreas[i].areaYellow - leftoverSegmentAreas[j].areaYellow) +
-                              std::abs(originalSegmentAreas[i].areaBlue - leftoverSegmentAreas[j].areaBlue);
-            // std::abs(originalSegmentAreas[i].areaBlack - leftoverSegmentAreas[j].areaBlack);
+            double distance = std::abs(originalSegmentAreas[i].areaYellow - leftoverSegmentAreas[j].areaYellow);
             if (distance < minDistance)
             {
                 minDistance = distance;
@@ -227,6 +255,10 @@ std::vector<Couple> Leftover::coupleSegmentColors(std::vector<cv::Mat> &original
     return result;
 }
 
+/*
+    Computes Original and Leftover with most matches
+    @returns: Pair of Original,Leftover image with the least difference in area of circle
+*/
 Couple Leftover::coupleMaxMatches(const std::vector<int> &matches,
                                   std::vector<cv::Mat> &leftovers, const cv::Mat &original)
 {
@@ -255,7 +287,7 @@ Couple Leftover::coupleMaxMatches(const std::vector<int> &matches,
 
 /*
     Computes Original and Leftover with least difference in area of circle
-    @returns: Pair of Original,Leftover image with the least difference in area of circle
+    @returns: vector of Couple of Original,Leftover image with the least difference in area of circle
 */
 std::vector<Couple> Leftover::coupleClosestElements(const std::vector<cv::Mat> &originals,
                                                     const std::vector<cv::Mat> &leftovers)
@@ -266,9 +298,13 @@ std::vector<Couple> Leftover::coupleClosestElements(const std::vector<cv::Mat> &
         double original = circleAreasOriginal[i];
         double minDistance = 1000000;
         int closestIndex = 0;
-        for (int j = 0; j < circleAreasLeftover.size(); j++)
+        std::cout << "before cycle" << std::endl;
+
+        for (int j = 0; j < circleAreasLeftover.size() - 1; j++)
         {
+            std::cout << "before in" << std::endl;
             double leftover = circleAreasLeftover[j];
+            std::cout << "after in" << std::endl;
             double distance = std::abs(original - leftover);
             if (distance < minDistance)
             {
@@ -286,7 +322,7 @@ std::vector<Couple> Leftover::coupleClosestElements(const std::vector<cv::Mat> &
 
 /*
     Computes minDistance between average colors of the images
-    @returns: Pair of Original,Leftover image with the least distance of mean average color
+    @returns: vector of Couple of Original,Leftover image with the least distance of mean average color
 */
 std::vector<Couple> Leftover::coupleMinAverageColor(const std::vector<cv::Mat> &originals,
                                                     const std::vector<cv::Mat> &leftovers)
@@ -310,6 +346,7 @@ std::vector<Couple> Leftover::coupleMinAverageColor(const std::vector<cv::Mat> &
         Couple couple;
         couple.original = originals[i];
         couple.leftover = leftovers[closestIndex];
+        couple.dist = minDist;
         result.push_back(couple);
     }
     return result;
@@ -317,6 +354,10 @@ std::vector<Couple> Leftover::coupleMinAverageColor(const std::vector<cv::Mat> &
 
 // ------------------------------------------------------------------------------------------------------ //
 
+/*
+    Checks if the Original is the same as the Original predicted
+    and if the Leftover is the same as the Leftover predicted
+*/
 bool checkCouplesEqual(const Couple &a, const Couple &b)
 {
     cv::Mat aOriginalGray, bOriginalGray, aLeftoverGray, bLeftoverGray;

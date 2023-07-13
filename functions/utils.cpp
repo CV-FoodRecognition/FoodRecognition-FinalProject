@@ -27,16 +27,56 @@ void addFood(int size, std::string fileName, std::string label, int id,
 {
     cv::Mat temp_template;
     foodTemplate myFood;
-    for (int i = 1; i <= size; i++)
+    if (size > 0)
     {
-        std::string file = path + fileName + std::to_string(i) + ".jpg";
-        temp_template = cv::imread(file, cv::IMREAD_GRAYSCALE);
-        myFood.foodTemplates.push_back(temp_template);
-        myFood.label = label;
-        myFood.id = id;
+        for (int i = 1; i <= size; i++)
+        {
+            std::string file = path + fileName + std::to_string(i) + ".jpg";
+            temp_template = cv::imread(file, cv::IMREAD_GRAYSCALE);
+            myFood.foodTemplates.push_back(temp_template);
+        }
     }
+
+    myFood.label = label;
+    myFood.id = id;
     templates.push_back(myFood);
     return;
+}
+
+cv::Rect computeBox(cv::Mat &final, cv::Mat &dish)
+{
+    int x = final.cols;
+    int y = final.rows;
+    int max_x = 0;
+    int max_y = 0;
+    for (int i = 0; i < dish.cols; i++)
+    {
+        for (int j = 0; j < dish.rows; j++)
+        {
+            if (dish.at<cv::Vec3b>(cv::Point(i, j))[0] != 0 &&
+                dish.at<cv::Vec3b>(cv::Point(i, j))[1] != 0 &&
+                dish.at<cv::Vec3b>(cv::Point(i, j))[2] != 0)
+            {
+                if (i < x)
+                {
+                    x = i;
+                }
+                if (i > max_x)
+                {
+                    max_x = i;
+                }
+                if (j < y)
+                {
+                    y = j;
+                }
+                if (j > max_y)
+                {
+                    max_y = j;
+                }
+            }
+        }
+    }
+    return cv::Rect(x, y, max_x - x, max_y - y);
 }
 
 std::string enumToString(FoodType label)
@@ -120,6 +160,17 @@ void acceptCircles(cv::Mat &in, cv::Mat &mask, cv::Mat &temp,
         cv::circle(temp, center, 1, cv::Scalar(255, 0, 0), 3, cv::LINE_AA);
         cv::circle(temp, center, radius, cv::Scalar(0, 255, 0), 3, cv::LINE_AA);
     }
+}
+
+bool areSameImage(const cv::Mat &in1, const cv::Mat &in2)
+{
+    if (in1.size() != in2.size() || in1.type() != in2.type())
+        return false;
+
+    cv::Mat mask;
+    cv::bitwise_xor(in1, in2, mask);
+
+    return cv::countNonZero(mask) == 0;
 }
 
 /*

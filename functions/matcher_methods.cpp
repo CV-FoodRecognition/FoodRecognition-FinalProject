@@ -22,7 +22,7 @@ void bruteForceHammingSorted(cv::Mat img1, cv::Mat img2, Result res)
     showImg(file, imgMatches);
 }
 
-void bruteForceKNN(cv::Mat img1, foodTemplate food, cv::Mat dish, cv::Mat &final)
+void bruteForceKNN(cv::Mat img1, foodTemplate food, cv::Mat dish, cv::Mat &final, std::vector<BoundingBox> &boundingBoxes)
 {
     std::cout << "nuovo cibo" << std::endl;
     img1.convertTo(img1, CV_8U);
@@ -61,8 +61,7 @@ void bruteForceKNN(cv::Mat img1, foodTemplate food, cv::Mat dish, cv::Mat &final
             int id = goodMatches[i].queryIdx;
             float kp_x = res.kp1[id].pt.x;
             float kp_y = res.kp1[id].pt.y;
-            std::cout << "kp_x:  " << kp_x << std::endl;
-            std::cout << "kp_y:  " << kp_y << std::endl;
+
             if (kp_x < x)
             {
                 x = cvRound(kp_x);
@@ -79,17 +78,13 @@ void bruteForceKNN(cv::Mat img1, foodTemplate food, cv::Mat dish, cv::Mat &final
             {
                 max_y = cvRound(kp_y);
             }
-            std::cout << "x:  " << x << std::endl;
-            std::cout << "y:  " << y << std::endl;
-            std::cout << "max_x:  " << max_x << std::endl;
-            std::cout << "max_y:  " << max_y << std::endl;
         }
     }
 
-    cv::Rect boundingBox(x, y, max_x - x, max_y - y);
-    cv::putText(final, food.label, cv::Point(x, y - 20), cv::FONT_HERSHEY_COMPLEX, 1, cv::Scalar(0, 255, 0), 2, 8, false);
-    cv::rectangle(final, boundingBox, CV_RGB(255, 0, 0), 2);
-    std::cout << "calcolato box e disegnata" << std::endl;
+    BoundingBox bb;
+    bb.box = cv::Rect(x, y, max_x - x, max_y - y);
+    bb.label = food.label;
+    boundingBoxes.push_back(bb);
 
     return;
 }
@@ -116,8 +111,7 @@ int bruteForceKNN(cv::Mat img1, cv::Mat img2, Result res)
     cv::drawMatches(img1, res.kp1, img2, res.kp2, goodMatches, imgMatches);
 
     std::string file = "KNN - Matching - SIFT.png";
-    cv::imshow(file, imgMatches);
-    cv::waitKey();
+    // showImg(file, imgMatches);
 
     return goodMatches.size();
 }

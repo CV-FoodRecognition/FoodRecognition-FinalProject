@@ -7,6 +7,24 @@
 #include <cmath>
 #include "ImageProcessor.h"
 
+enum FoodType
+{
+    Meat,
+    Beans
+};
+
+enum SharpnessType
+{
+    LAPLACIAN,
+    HIGHPASS
+};
+
+struct BoundingBox
+{
+    cv::Rect box;
+    std::string label;
+};
+
 struct foodTemplate
 {
     std::vector<cv::Mat> foodTemplates;
@@ -18,18 +36,13 @@ struct Couple
 {
     cv::Mat original;
     cv::Mat leftover;
+    double dist = 0;
 };
 
 struct Result
 {
     std::vector<cv::KeyPoint> kp1, kp2; // keypoints
     cv::Mat descriptor1, descriptor2;   // descriptors
-};
-
-enum SharpnessType
-{
-    LAPLACIAN,
-    HIGHPASS
 };
 
 struct PassedStruct
@@ -50,12 +63,6 @@ struct SegmentAreas
     cv::Point bottomRight;
 };
 
-enum FoodType
-{
-    Meat,
-    Beans
-};
-
 struct BoxLabel
 {
     cv::Rect mser_box;
@@ -74,11 +81,13 @@ void sharpenImg(cv::Mat &src, SharpnessType t);
 cv::Mat convertGray(cv::Mat &src);
 void removeDish(cv::Mat &shifted);
 double computeArea(cv::Rect box);
+cv::Rect computeBox(cv::Mat &final, cv::Mat &dish);
 double computeCircleArea(double radius);
 void computeSegmentArea(SegmentAreas &sa);
 void acceptCircles(cv::Mat &in, cv::Mat &mask, cv::Mat &temp,
                    cv::Vec3i &c, cv::Point &center, int radius,
                    std::vector<cv::Vec3f> &accepted_circles,
                    std::vector<int> &dishesMatches, std::vector<cv::Mat> &dishes);
+bool areSameImage(const cv::Mat &image1, const cv::Mat &image2);
 
 #endif // UTILS_H
