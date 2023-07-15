@@ -4,17 +4,16 @@
 #include <iostream>
 #include <vector>
 
-struct BoundingBox {
+/* struct BoundingBox {
     int id;  //ID del cibo
     float x1, y1, x2, y2;  //Coordinate del rect
-};
+};*/
 
-float get_iou(const BoundingBox& ground_truth, const BoundingBox& pred);
+float get_iou(const BoundingBox &ground_truth, const BoundingBox &pred);
 
-float get_meaniou(std::vector<BoundingBox>& groundTruth, std::vector<BoundingBox>& predictions);
+float get_meaniou(std::vector<BoundingBox> &groundTruth, std::vector<BoundingBox> &predictions);
 
 double calculatePixelRatio(int pixelsAfterimg, int pixelsBeforeimg);
-
 
 /*double calculateAveragePrecision(const std::vector<double> &results,
                                  const std::vector<double> &relevantDocs,
