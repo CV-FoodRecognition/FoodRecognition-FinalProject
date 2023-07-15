@@ -23,6 +23,7 @@ public:
     std::vector<Couple> getPairArea() const { return pairArea; }
     std::vector<Couple> getPairMatches() const { return pairMatches; }
     std::vector<Couple> getPairSegments() const { return pairSegments; }
+    std::vector<cv::Mat> getLeftoverDishes() const { return leftoverDishes; }
 
 private:
     // ------------------------------------------------------------------------------------------------------ //
