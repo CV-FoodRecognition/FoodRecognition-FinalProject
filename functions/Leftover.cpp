@@ -8,13 +8,18 @@ void Leftover::computeLeftovers(std::vector<cv::Mat> &removedDishes, const std::
 
     std::cout << "bool: " << hasThreeOriginals << std::endl;
 
-    // leggo i 2 o 3 piatti originali
+    // BASIC FOR 1 DISH
     cv::Mat original1 = removedDishes[0];
-    cv::Mat original2 = removedDishes[1];
-
-    // Calcola avg color 1 and 2 for piatti originali
     cv::Scalar avgOriginal1 = computeAvgColor(original1);
-    cv::Scalar avgOriginal2 = computeAvgColor(original2);
+    avgOriginals.push_back(avgOriginal1);
+
+    // BASIC FOR 2 DISHES
+    if (removedDishes.size() == 2)
+    {
+        cv::Mat original2 = removedDishes[1];
+        cv::Scalar avgOriginal2 = computeAvgColor(original2);
+        avgOriginals.push_back(avgOriginal2);
+    }
 
     // Removes dishes from leftovers
     std::vector<cv::Mat> removedLeftovers;
@@ -29,44 +34,49 @@ void Leftover::computeLeftovers(std::vector<cv::Mat> &removedDishes, const std::
     originalDishes = removedDishes;
     leftoverDishes = removedLeftovers;
 
-    bool hasThreeLeftovers = removedLeftovers.size() == 3;
+    bool hasThreeLeftovers = (removedLeftovers.size() == 3);
+
+    if (hasThreeLeftovers && !hasThreeOriginals)
+    {
+        std::cerr << "The leftover does not belong to the tray in input.";
+        return;
+    }
 
     std::cout << "original size " << removedDishes.size() << std::endl;
     std::cout << "leftover size " << removedLeftovers.size() << std::endl;
 
-    // Take leftovers 1 and 2
-    cv::Mat left1 = removedLeftovers[0];
-    cv::Mat left2 = removedLeftovers[1];
+    // LEFT for 1 DISH
+    cv::Mat left1 = removedLeftovers[0];          // removed dish
+    cv::Scalar avgLeft1 = computeAvgColor(left1); // average color
+    avgLefts.push_back(avgLeft1);
+    // LEFT for 2 DISHES
+    if (removedLeftovers.size() == 2)
+    {
+        cv::Mat left2 = removedLeftovers[1];
+        cv::Scalar avgLeft2 = computeAvgColor(left2);
+        avgLefts.push_back(avgLeft2);
+    }
 
-    // Average color for leftovers 1 and 2
-    cv::Scalar avgLeft1 = computeAvgColor(left1);
-    cv::Scalar avgLeft2 = computeAvgColor(left2);
-
-    std::cout << "average leftover colors " << std::endl;
-
-    // Vectors of average colors for 1 and 2
-    avgOriginals = {avgOriginal1, avgOriginal2};
-    avgLefts = {avgLeft1, avgLeft2};
-
-    // IF ORIGINAL DISHES ARE THREE...
+    // *************************** //
+    // IF ORIGINAL DISHES ARE 3...
     cv::Mat original3, left3;
     cv::Scalar avgOriginal3, avgLeft3;
-    // 3 ORIGINALS
     if (hasThreeOriginals)
-    {
+    { // 3 ORIGINALS
         original3 = removedDishes[2];
         avgOriginal3 = computeAvgColor(original3);
         avgOriginals.push_back(avgOriginal3);
     }
-    // 3 LEFTOVERS
+    // IF LEFTOVER DISHES ARE 3...
     if (hasThreeLeftovers)
-    {
+    { // 3 LEFTOVERS
         left3 = removedLeftovers[2];
         avgLeft3 = computeAvgColor(left3);
         avgLefts.push_back(avgLeft3);
     }
+    // *************************** //
 
-    std::vector<int> matches; // vector of matches
+    std::vector<int> matches; // vector of matches, is cleared at every iteration
     /*
         For every circle in removedDishes (original dishes):
             - compute SIFT with the three leftover dishes with index 0,1,2
@@ -78,30 +88,40 @@ void Leftover::computeLeftovers(std::vector<cv::Mat> &removedDishes, const std::
     */
     for (int i = 0; i < removedDishes.size(); i++)
     {
-        // Descriptor creation for SIFT
         res1 = useDescriptor(removedDishes[i], removedLeftovers[0], DescriptorType::SIFT);
-        res2 = useDescriptor(removedDishes[i], removedLeftovers[1], DescriptorType::SIFT);
-        // Brute Force KNN for SIFT descriptors
         int matches1 = bruteForceKNN(removedDishes[i], removedLeftovers[0], res1);
-        int matches2 = bruteForceKNN(removedDishes[i], removedLeftovers[1], res2);
-        // Matches stores the number of matches
         matches.push_back(matches1);
-        matches.push_back(matches2);
 
-        if (hasThreeOriginals && hasThreeLeftovers)
+        if (removedLeftovers.size() > 1)
+        {
+            res2 = useDescriptor(removedDishes[i], removedLeftovers[1], DescriptorType::SIFT);
+            int matches2 = bruteForceKNN(removedDishes[i], removedLeftovers[1], res2);
+            matches.push_back(matches2);
+        }
+
+        if (removedLeftovers.size() > 2)
         {
             res3 = useDescriptor(removedDishes[i], removedLeftovers[2], DescriptorType::SIFT);
             int matches3 = bruteForceKNN(removedDishes[i], removedLeftovers[2], res3);
             matches.push_back(matches3);
         }
 
-        // COUPLE by SIFT MATCHES
+        std::cout << i << " --> " << matches.size() << std::endl;
+
         Couple tempPair = coupleMaxMatches(matches, removedLeftovers, removedDishes[i]);
         pairMatches.push_back(tempPair);
 
+        std::cout << i << " --> " << pairMatches.size() << std::endl;
+
         double circleOriginal = computeCircleArea(radia1[i]);
-        double circleLeftover = computeCircleArea(radia2[i]);
         circleAreasOriginal.push_back(circleOriginal);
+
+        matches.clear(); // clear the dishes from previous matches of the dishes
+    }
+
+    for (int i = 0; i < removedLeftovers.size(); i++)
+    {
+        double circleLeftover = computeCircleArea(radia2[i]);
         circleAreasLeftover.push_back(circleLeftover);
     }
 
@@ -120,10 +140,15 @@ void Leftover::computeLeftovers(std::vector<cv::Mat> &removedDishes, const std::
     pairSegments = coupleSegmentColors(removedDishes, removedLeftovers);
     std::cout << "c3" << std::endl;
 
-    /* printVector(pairArea, "Pair Area");
-     printVector(pairAvgColors, "Pair Color");
-     printVector(pairMatches, "Pair Matches");
-     printVector(pairSegments, "Pair Segments"); */
+    std::cout << "pair Area: " << pairArea.size() << std::endl;
+    std::cout << "pair Avg Color: " << pairAvgColors.size() << std::endl;
+    std::cout << "pair Segment: " << pairSegments.size() << std::endl;
+    std::cout << "pair Matches: " << pairMatches.size() << std::endl;
+
+    // printVector(pairArea, "Pair Area");
+    // printVector(pairAvgColors, "Pair Color");
+    // printVector(pairMatches, "Pair Matches");
+    // printVector(pairSegments, "Pair Segments");
 
     jointPredictions();
 }
@@ -140,22 +165,50 @@ void Leftover::computeLeftovers(std::vector<cv::Mat> &removedDishes, const std::
         - two couples are the same
           and two couples are different     --> @returns: 50%   predicted couple
         - two couples are the same
-          and two couples are the same      --> @returns: the pair with the most similar average color
-        - no couples are the same           --> @returns: a random predicted couple
+          and two couples are the same      --> @returns: 50%   predicted couple with most similar average color
+        - no couples are the same           --> @returns: a random couple
 */
 void Leftover::jointPredictions()
 {
-    std::vector<Couple> finalPairs;
-    std::vector<int> counterVec;
+    bool onlyOneLeftover = leftoverDishes.size() == 1;
+    bool twoLeftoversTwoOriginals = (leftoverDishes.size() == 2 && originalDishes.size() == 2);
+    bool threeLeftoversThreeOriginals = (leftoverDishes.size() == 3 && originalDishes.size() == 3);
+    bool twoLeftoversThreeOriginals = leftoverDishes.size() == 2 && originalDishes.size() == 3;
 
+    std::vector<Couple> finalPairs;
+    std::vector<cv::Mat> alreadyAssigned;
+
+    /*
+        Initial Checks
+        If leftover.size() == 1 --> all original dishes would predict the same leftover.
+        So.. We need to order all the couples by number of matches.
+    */
+    if (onlyOneLeftover)
+    {
+        int select = 1;
+        moreOriginalLessLeftovers(select, finalPairs, alreadyAssigned);
+    }
+    else if (twoLeftoversThreeOriginals)
+    {
+        int select = 2;
+        moreOriginalLessLeftovers(select, finalPairs, alreadyAssigned);
+    }
+    else if (twoLeftoversTwoOriginals || threeLeftoversThreeOriginals)
+    {
+        normalConditionsPrediction(finalPairs);
+    }
+
+    printVector(finalPairs, "Final Predictions");
+}
+
+void Leftover::normalConditionsPrediction(std::vector<Couple> &finalPairs)
+{
     // FOR EVERY ORIGINAL DISH     -->     4 PREDICTED LEFTOVERS
     // check how many predictions are the same
     for (int i = 0; i < pairMatches.size(); i++)
     {
         // initialize counter for equal results
         int counterEquals = 0;
-        int m1 = 0, m2 = 0, m3 = 0;
-
         // Count number of same results from all measurement methods
         if (checkCouplesEqual(pairMatches[i], pairAvgColors[i]))
             counterEquals += 1;
@@ -192,11 +245,87 @@ void Leftover::jointPredictions()
         // if all couples are different -- Count == 0
         else
             finalPairs.push_back(pairAvgColors[i]);
-
-        counterVec.push_back(counterEquals);
     }
+}
 
-    printVector(finalPairs, "Final Predictions");
+void Leftover::moreOriginalLessLeftovers(int type, std::vector<Couple> &finalPairs, std::vector<cv::Mat> &alreadyAssigned)
+{
+    if (type == 1)
+    {
+        if (originalDishes.size() == 2 || originalDishes.size() == 3)
+        {
+            int maxMatchesIndex = 0;
+            int maxMatches = pairMatches[0].matches;
+            for (int i = 0; i < pairMatches.size(); i++)
+            {
+                if (pairMatches[i].matches > maxMatches)
+                {
+                    maxMatches = pairMatches[i].matches;
+                    maxMatchesIndex = i;
+                }
+            }
+            Couple couple;
+            couple.leftover = pairMatches[maxMatchesIndex].leftover;
+            couple.original = pairMatches[maxMatchesIndex].original;
+            couple.matches = maxMatches;
+            finalPairs.push_back(couple);
+
+            // Match with black picture
+            for (int i = 1; i < originalDishes.size(); i++)
+            {
+                Couple emptyCouple;
+                emptyCouple.leftover = cv::Mat::zeros(originalDishes[i].size(), originalDishes[i].type());
+                std::string errMessage = "No matches found for this dish.";
+                cv::putText(emptyCouple.leftover, errMessage, cv::Point(50, 50), cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(255, 255, 255), 2);
+                emptyCouple.original = originalDishes[i];
+                finalPairs.push_back(emptyCouple);
+            }
+        }
+    }
+    else if (type == 2)
+    {
+        std::sort(pairMatches.begin(), pairMatches.end(), [](const Couple &a, const Couple &b)
+                  { return a.matches > b.matches; });
+
+        // FIRST 2 DISHES
+        for (int i = 0; i < 2; i++)
+        {
+            Couple couple;
+            couple.leftover = pairMatches[i].leftover;
+            couple.original = pairMatches[i].original;
+            couple.matches = pairMatches[i].matches;
+            finalPairs.push_back(couple);
+            alreadyAssigned.push_back(couple.leftover);
+        }
+        // 3RD DISH
+        for (int i = 0; i < originalDishes.size(); i++)
+        {
+            // Check if the original dish is already assigned
+            bool isAssigned = false;
+            for (const cv::Mat &assigned : alreadyAssigned)
+            {
+                if (assigned.empty() || assigned.size() != originalDishes[i].size() ||
+                    cv::countNonZero(assigned != originalDishes[i]) != 0)
+                {
+                    isAssigned = true;
+                    break;
+                }
+            }
+
+            // If the original dish is not assigned, assign the remaining leftover to it
+            if (!isAssigned)
+            {
+                Couple couple;
+                couple.leftover = leftoverDishes.back();
+                couple.original = originalDishes[i];
+                couple.matches = 0; // No matches since it's an unassigned leftover
+                finalPairs.push_back(couple);
+
+                // Remove the assigned leftover from the leftoverDishes vector
+                leftoverDishes.pop_back();
+            }
+        }
+    }
 }
 
 // ------------------------------------------------------------------------------------------------------ //
@@ -232,12 +361,12 @@ std::vector<Couple> Leftover::coupleSegmentColors(std::vector<cv::Mat> &original
         leftoverSegmentAreas.push_back(sa);
     }
 
-    // Find best matching pairs according to segment areas
     std::vector<Couple> result;
     for (int i = 0; i < originalSegmentAreas.size(); i++)
     {
         double minDistance = std::numeric_limits<double>::max();
-        int closestIndex = 0;
+        int closestIndex = -1; // Initialize closestIndex with an invalid value
+
         for (int j = 0; j < leftoverSegmentAreas.size(); j++)
         {
             double distance = std::abs(originalSegmentAreas[i].areaYellow - leftoverSegmentAreas[j].areaYellow);
@@ -247,11 +376,15 @@ std::vector<Couple> Leftover::coupleSegmentColors(std::vector<cv::Mat> &original
                 closestIndex = j;
             }
         }
-        Couple couple;
-        couple.original = originals[i];
-        couple.leftover = leftovers[closestIndex];
-        result.push_back(couple);
+        if (closestIndex != -1) // Only add a couple if a matching leftover is found
+        {
+            Couple couple;
+            couple.original = originals[i];
+            couple.leftover = leftovers[closestIndex];
+            result.push_back(couple);
+        }
     }
+
     return result;
 }
 
@@ -262,26 +395,96 @@ std::vector<Couple> Leftover::coupleSegmentColors(std::vector<cv::Mat> &original
 Couple Leftover::coupleMaxMatches(const std::vector<int> &matches,
                                   std::vector<cv::Mat> &leftovers, const cv::Mat &original)
 {
-    if (matches[0] >= matches[1] && matches[0] >= matches[2])
+    if (matches.size() == 3)
     {
+        std::cout << "Matches 3" << std::endl;
+
+        if (matches[0] >= matches[1] && matches[0] >= matches[2])
+        {
+            std::cout << "Matches 3.1" << std::endl;
+
+            Couple couple;
+            couple.leftover = leftovers[0];
+            couple.original = original;
+            couple.matches = matches[0];
+            return couple;
+        }
+        else if (matches[1] >= matches[0] && matches[1] >= matches[2])
+        {
+            std::cout << "Matches 3.2" << std::endl;
+
+            Couple couple;
+            couple.leftover = leftovers[1];
+            couple.original = original;
+            couple.matches = matches[1];
+
+            return couple;
+        }
+        else if (matches[2] >= matches[0] && matches[2] >= matches[1])
+        {
+            std::cout << "Matches 3.3" << std::endl;
+
+            Couple couple;
+            couple.leftover = leftovers[2];
+            couple.original = original;
+            couple.matches = matches[2];
+
+            return couple;
+        }
+    }
+    else if (matches.size() == 2)
+    {
+        std::cout << "Matches 2" << std::endl;
+
+        if (matches[0] > matches[1])
+        {
+            std::cout << "Matches 2.1" << std::endl;
+
+            Couple couple;
+            couple.leftover = leftovers[0];
+            couple.original = original;
+            couple.matches = matches[0];
+
+            return couple;
+        }
+        else if (matches[1] > matches[0])
+        {
+            std::cout << "Matches 2.2" << std::endl;
+
+            Couple couple;
+            couple.leftover = leftovers[1];
+            couple.original = original;
+            couple.matches = matches[1];
+
+            return couple;
+        }
+        else
+        {
+            std::cout << "Matches 2.3" << std::endl;
+
+            int rand = std::rand() % 2;
+            Couple couple;
+            couple.leftover = leftovers[rand];
+            couple.original = original;
+            couple.matches = matches[rand];
+
+            return couple;
+        }
+    }
+    else if (matches.size() == 1)
+    {
+        std::cout << "Matches 1" << std::endl;
         Couple couple;
+        // couple.leftover.create(original.size(), original.type());
         couple.leftover = leftovers[0];
         couple.original = original;
-        return couple;
-    }
-    else if (matches[1] >= matches[0] && matches[1] >= matches[2])
-    {
-        Couple couple;
-        couple.leftover = leftovers[1];
-        couple.original = original;
+        couple.matches = matches[0];
+
         return couple;
     }
     else
     {
-        Couple couple;
-        couple.leftover = leftovers[2];
-        couple.original = original;
-        return couple;
+        std::cerr << "Number of matches --> " << matches.size() << std::endl;
     }
 }
 
@@ -300,7 +503,7 @@ std::vector<Couple> Leftover::coupleClosestElements(const std::vector<cv::Mat> &
         int closestIndex = 0;
         std::cout << "before cycle" << std::endl;
 
-        for (int j = 0; j < circleAreasLeftover.size() - 1; j++)
+        for (int j = 0; j < circleAreasLeftover.size(); j++)
         {
             std::cout << "before in" << std::endl;
             double leftover = circleAreasLeftover[j];

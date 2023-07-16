@@ -96,8 +96,6 @@ int main(int argc, char **argv)
 
         removedDishes.push_back(rmvDish);
 
-        int pixelCount = cv::countNonZero(rmvDish);
-
         // showImg("Image", rmvDish);
 
         // imgProc.doMSER(shifted, resMSER);
@@ -124,8 +122,8 @@ int main(int argc, char **argv)
         imwrite("../images/Results/kmeansResult" + to_string(d) + ".jpg", r); */
     }
 
-    detectAndRecognize(dishes, templates, dishesMatches, in1, final, result);
-    showImg("FINALE", final);
+    // detectAndRecognize(dishes, templates, dishesMatches, in1, final, result);
+    // showImg("FINALE", final);
 
     cout << "XX" << endl;
 
@@ -136,8 +134,8 @@ int main(int argc, char **argv)
        segmentedImages.push_back(segmentedImg);
    } */
 
-    // Leftover leftover;
-    // leftover.computeLeftovers(removedDishes, leftovers, radia1, radia2);
+    Leftover leftover;
+    leftover.computeLeftovers(removedDishes, leftovers, radia1, radia2);
 
     cout << "XXX" << endl;
 

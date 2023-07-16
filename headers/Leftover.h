@@ -24,6 +24,8 @@ public:
     std::vector<Couple> getPairMatches() const { return pairMatches; }
     std::vector<Couple> getPairSegments() const { return pairSegments; }
     std::vector<cv::Mat> getLeftoverDishes() const { return leftoverDishes; }
+    std::vector<cv::Mat> getSegmentedOriginals() const { return segmentedOriginal; }
+    std::vector<cv::Mat> getSegmentedLeftovers() const { return segmentedLeftovers; }
 
 private:
     // ------------------------------------------------------------------------------------------------------ //
@@ -34,20 +36,23 @@ private:
     std::vector<cv::Scalar> avgOriginals;    // vector of average colors for original images in the tray
     std::vector<cv::Scalar> avgLefts;        // vector of average colors for leftover images in the tray
     std::vector<Couple> pairAvgColors, pairArea, pairMatches, pairSegments;
-    std::vector<cv::Mat> originalDishes, leftoverDishes;
+    std::vector<cv::Mat> originalDishes, leftoverDishes, segmentedOriginal, segmentedLeftovers;
 
     // ------------------------------------------------------------------------------------------------------ //
     // measurments methods      -->     @return: Couple
 
     std::vector<Couple> coupleSegmentColors(std::vector<cv::Mat> &originals, std::vector<cv::Mat> &leftovers);
     std::vector<Couple> coupleClosestElements(const std::vector<cv::Mat> &originals, const std::vector<cv::Mat> &leftovers);
-    Couple coupleMaxMatches(const std::vector<int> &matches, std::vector<cv::Mat> &leftovers, const cv::Mat &original);
     std::vector<Couple> coupleMinAverageColor(const std::vector<cv::Mat> &originals, const std::vector<cv::Mat> &leftovers);
+    Couple coupleMaxMatches(const std::vector<int> &matches, std::vector<cv::Mat> &leftovers, const cv::Mat &original);
+
     void allDishesDifferent(std::vector<Couple> &finalPairs, const std::vector<int> &counterVec);
 
     // ------------------------------------------------------------------------------------------------------ //
     // combines all measurments methods
     void jointPredictions();
+    void normalConditionsPrediction(std::vector<Couple> &finalPairs);
+    void moreOriginalLessLeftovers(int type, std::vector<Couple> &finalPairs, std::vector<cv::Mat> &alreadyAssigned);
 };
 
 // ---------------------------------------------------------------------------------------------------- //

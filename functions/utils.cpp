@@ -13,11 +13,43 @@ void showImg(std::string title, cv::Mat image)
     cv::waitKey(0);
 }
 
-void concatShowImg(std::string title, cv::Mat image1, cv::Mat image2)
+void concatShowImg(std::string title, cv::Mat original, cv::Mat leftover)
 {
+    if (original.channels() != leftover.channels())
+    {
+        std::cerr << "Warning: Input matrices have different numbers of channels. Adjusting them to the same number of channels." << std::endl;
+
+        int maxChannels = std::max(original.channels(), leftover.channels());
+
+        if (original.channels() < maxChannels)
+        {
+            cv::cvtColor(original, original, cv::COLOR_GRAY2BGR); // Convert original to 3 channels (BGR) if it has only 1 channel
+        }
+        if (leftover.channels() < maxChannels)
+        {
+            cv::Mat temp;
+            cv::cvtColor(leftover, leftover, cv::COLOR_GRAY2BGR); // Convert leftover to 3 channels (BGR) if it has only 1 channel        }
+        }
+    }
+    if (original.size() != leftover.size())
+    {
+        std::cerr << "Warning: Input matrices have different dimensions. Resizing them to the same dimensions." << std::endl;
+
+        if (original.size().area() < leftover.size().area())
+            cv::resize(leftover, leftover, original.size());
+        else
+            cv::resize(original, original, leftover.size());
+    }
+
+    if (original.type() != leftover.type())
+    {
+        std::cerr << "Warning: Input matrices have different data types. Converting them to the same data type." << std::endl;
+        original.convertTo(original, leftover.type());
+    }
+
     cv::Mat combined;
     cv::namedWindow(title, cv::WINDOW_NORMAL);
-    cv::hconcat(image1, image2, combined);
+    cv::hconcat(original, leftover, combined);
     cv::imshow(title, combined);
     cv::waitKey(0);
 }
@@ -129,6 +161,10 @@ void removeDish(cv::Mat &src)
         cv::inRange(src, cv::Scalar(k - 30, k - 30, k - 30), cv::Scalar(k, k, k), mask);
         src.setTo(cv::Scalar(0, 0, 0), mask);
     }
+}
+
+void removeDishWithGrabCut(cv::Mat &src)
+{
 }
 
 void acceptCircles(cv::Mat &in, cv::Mat &mask, cv::Mat &temp,

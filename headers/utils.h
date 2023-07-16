@@ -37,6 +37,7 @@ struct Couple
     cv::Mat original;
     cv::Mat leftover;
     double dist = 0;
+    double matches = 0;
 };
 
 struct Result
