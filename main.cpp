@@ -69,16 +69,15 @@ int main(int argc, char **argv)
     std::vector<cv::Mat> &leftovers = imgProcLeftovers.getDishes();
     std::vector<int> &radia2 = imgProcLeftovers.getRadius();
 
-    /* 1st method:
+    /*
+        1st method:
         Detect and Recognize Objects
     */
     // showImg("0", templates[0]);
     // showImg("1", templates[1]);
 
     cv::Mat final = in1.clone();
-
     cv::Mat resMSER;
-
     std::vector<cv::Mat> removedDishes;
     for (int d = 0; d < dishes.size(); d++)
     {
@@ -137,7 +136,7 @@ int main(int argc, char **argv)
     Leftover leftover;
     leftover.computeLeftovers(removedDishes, leftovers, radia1, radia2);
 
-    cout << "XXX" << endl;
+    cout << "fine" << endl;
 
     // SEGMENTATION
     /* for (int i = 0; i < segmentedImages.size(); i++)

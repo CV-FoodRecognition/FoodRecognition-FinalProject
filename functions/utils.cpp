@@ -35,10 +35,10 @@ void concatShowImg(std::string title, cv::Mat original, cv::Mat leftover)
     {
         std::cerr << "Warning: Input matrices have different dimensions. Resizing them to the same dimensions." << std::endl;
 
-        if (original.size().area() < leftover.size().area())
-            cv::resize(leftover, leftover, original.size());
-        else
-            cv::resize(original, original, leftover.size());
+        int maxWidth = std::max(original.cols, leftover.cols);
+        int maxHeight = std::max(original.rows, leftover.rows);
+        cv::resize(original, original, cv::Size(maxWidth, maxHeight));
+        cv::resize(leftover, leftover, cv::Size(maxWidth, maxHeight));
     }
 
     if (original.type() != leftover.type())

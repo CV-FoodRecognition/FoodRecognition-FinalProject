@@ -49,10 +49,13 @@ private:
     void allDishesDifferent(std::vector<Couple> &finalPairs, const std::vector<int> &counterVec);
 
     // ------------------------------------------------------------------------------------------------------ //
+
     // combines all measurments methods
     void jointPredictions();
     void normalConditionsPrediction(std::vector<Couple> &finalPairs);
     void moreOriginalLessLeftovers(int type, std::vector<Couple> &finalPairs, std::vector<cv::Mat> &alreadyAssigned);
+    // assign bounding boxes to every food
+    void assignBoundingBoxes(std::vector<BoundingBox> &boxes, std::vector<BoundingBox> &results, std::vector<cv::Mat> &leftovers);
 };
 
 // ---------------------------------------------------------------------------------------------------- //

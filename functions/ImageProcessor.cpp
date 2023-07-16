@@ -5,15 +5,15 @@ void ImageProcessor::doHough(cv::Mat &in)
     cv::Mat in_gray, temp;
     cvtColor(in, in_gray, cv::COLOR_BGR2GRAY);
     in_gray.convertTo(in_gray, CV_8UC1);
-    cv::GaussianBlur(in_gray, in_gray, cv::Size(7, 7), 1.5, 1.5, 4);
+    cv::GaussianBlur(in_gray, in_gray, cv::Size(3, 3), 0.5);
 
     temp = in.clone();
 
     // Hough Circles per ottenere solo i piatti
     std::vector<cv::Vec3f> circles;
     cv::HoughCircles(in_gray, circles, cv::HOUGH_GRADIENT,
-                     1, 1, 100, 85,
-                     150, 500); // min radius and max radius
+                     1, in_gray.rows / 2.5, 140, 55,
+                     185, 370); // min radius and max radius
 
     std::vector<cv::Vec3f> accepted_circles;
     for (int k = 0; k < circles.size(); k++)
@@ -116,16 +116,16 @@ bool isInside(std::vector<cv::Vec3f> circles, cv::Point center)
     {
         cv::Vec3i c = circles[i];
         cv::Point existingCenter = cv::Point(c[0], c[1]);
-        std::cout << "centro esistente: " << c[0] << " , " << c[1] << std::endl;
-        std::cout << "centro nuovo: " << center.x << " , " << center.y << std::endl;
+        // std::cout << "centro esistente: " << c[0] << " , " << c[1] << std::endl;
+        // std::cout << "centro nuovo: " << center.x << " , " << center.y << std::endl;
         double distance = cv::norm(existingCenter - center);
-        std::cout << "distanza: " << distance << "   raggio:  " << c[2] << std::endl;
+        // std::cout << "distanza: " << distance << "   raggio:  " << c[2] << std::endl;
         if (distance < c[2])
         {
-            std::cout << "scartato" << std::endl;
+            // std::cout << "scartato" << std::endl;
             return true;
         }
     }
-    std::cout << "va bene" << std::endl;
+    // std::cout << "va bene" << std::endl;
     return false;
 }
