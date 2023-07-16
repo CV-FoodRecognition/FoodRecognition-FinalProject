@@ -22,7 +22,7 @@ enum SharpnessType
 struct BoundingBox
 {
     cv::Rect box;
-    std::string label;
+    std::vector<std::string> labels;
 };
 
 struct foodTemplate

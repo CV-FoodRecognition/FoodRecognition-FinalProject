@@ -34,7 +34,7 @@ Result useDescriptor(cv::Mat &img1, cv::Mat &img2, DescriptorType typ)
     if (res.descriptor2.empty())
         std::cout << "ERROR - desc2";
 
-    std::cout << "UseDescriptor\n";
+    // std::cout << "UseDescriptor\n";
 
     return res;
 }

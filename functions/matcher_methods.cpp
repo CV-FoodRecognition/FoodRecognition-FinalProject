@@ -56,34 +56,37 @@ void bruteForceKNN(cv::Mat img1, foodTemplate food, cv::Mat dish, cv::Mat &final
         cv::Mat imgMatches;
         cv::drawMatches(img1, res.kp1, img2, res.kp2, goodMatches, imgMatches);
 
-        for (int i = 0; i < goodMatches.size(); i++)
+        if (goodMatches.size() > 3)
         {
-            int id = goodMatches[i].queryIdx;
-            float kp_x = res.kp1[id].pt.x;
-            float kp_y = res.kp1[id].pt.y;
+            for (int i = 0; i < goodMatches.size(); i++)
+            {
+                int id = goodMatches[i].queryIdx;
+                float kp_x = res.kp1[id].pt.x;
+                float kp_y = res.kp1[id].pt.y;
 
-            if (kp_x < x)
-            {
-                x = cvRound(kp_x);
-            }
-            if (kp_x > max_x)
-            {
-                max_x = cvRound(kp_x);
-            }
-            if (kp_y < y)
-            {
-                y = cvRound(kp_y);
-            }
-            if (kp_y > max_y)
-            {
-                max_y = cvRound(kp_y);
+                if (kp_x < x)
+                {
+                    x = cvRound(kp_x);
+                }
+                if (kp_x > max_x)
+                {
+                    max_x = cvRound(kp_x);
+                }
+                if (kp_y < y)
+                {
+                    y = cvRound(kp_y);
+                }
+                if (kp_y > max_y)
+                {
+                    max_y = cvRound(kp_y);
+                }
             }
         }
     }
 
     BoundingBox bb;
     bb.box = cv::Rect(x, y, max_x - x, max_y - y);
-    bb.label = food.label;
+    bb.labels.push_back(food.label);
     boundingBoxes.push_back(bb);
 
     return;

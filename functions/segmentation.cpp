@@ -43,8 +43,12 @@ Scalar computeAvgColor(Mat shifted)
     return avg_color;
 }
 
-Scalar computeAvgColorHSV(Mat img)
+cv::Scalar computeAvgColorHSV(cv::Mat img)
 {
+    if (img.channels() != 3 || img.type() != CV_8UC3)
+    {
+        std::cerr << "Error: Image is not in BGR format." << std::endl;
+    }
     Mat input = img.clone();
     // showImg("dish", input);
 
@@ -77,7 +81,7 @@ Scalar computeAvgColorHSV(Mat img)
     // showImg("average color", color);
 
     cv::cvtColor(color, hsv, cv::COLOR_BGR2HSV);
-    Scalar hsv_color = hsv.at<uchar>(0, 0);
+    Scalar hsv_color = hsv.at<cv::Vec3b>(1, 1);
     cout << "hue: " << hsv_color[0] << endl;
 
     return hsv_color;
@@ -88,18 +92,28 @@ int computeBestDish(foodTemplate food, std::vector<cv::Mat> dishes, std::vector<
     int best_dish_id = -1;
     for (int d = 0; d < dishesMatches.size(); d++)
     {
+        std::cout << "dishes matches:  " << dishesMatches[d] << std::endl;
         Scalar avgColor = computeAvgColorHSV(dishes[d]);
 
         if (food.id == 1)
         {
             if (avgColor[0] > 30 && avgColor[0] < 50)
             {
+                best_dish_id = d;
                 return d;
             }
         }
-        if (food.id == 2)
+        if (food.id == 2 || food.id == 3)
         {
             if (avgColor[0] > 0 && avgColor[0] < 11)
+            {
+                best_dish_id = d;
+                return d;
+            }
+        }
+        if (food.id == 4)
+        {
+            if (avgColor[0] > 10 && avgColor[0] < 20)
             {
                 best_dish_id = d;
                 return d;
@@ -130,17 +144,17 @@ void boundBread(cv::Mat &input, std::vector<cv::Mat> &dishes,
     cv::cvtColor(inClone, inHSV, cv::COLOR_BGR2HSV);
 
     Mat mask;
-    cv::inRange(inHSV, Scalar(12, 80, 140), Scalar(28, 230, 255), mask);
+    cv::inRange(inHSV, Scalar(12, 78, 180), Scalar(25, 110, 240), mask);
     for (int i = 0; i < mask.rows; i++)
         for (int j = 0; j < mask.cols; j++)
             mask.at<uchar>(i, j) = 255 - mask.at<uchar>(i, j);
 
     inHSV.setTo(Scalar(0, 0, 0), mask);
 
-    int kernelSize = 3;
+    int kernelSize = 9;
     cv::Mat kernel = getStructuringElement(MORPH_RECT, Size(kernelSize, kernelSize));
     erode(inHSV, inHSV, kernel);
-    kernelSize = 7;
+    kernelSize = 9;
     kernel = getStructuringElement(MORPH_RECT, Size(kernelSize, kernelSize));
     dilate(inHSV, inHSV, kernel);
 
@@ -151,7 +165,7 @@ void boundBread(cv::Mat &input, std::vector<cv::Mat> &dishes,
 
     BoundingBox bb;
     bb.box = box;
-    bb.label = "bread";
+    bb.labels.push_back("bread");
     boundingBoxes.push_back(bb);
 }
 
@@ -174,17 +188,100 @@ void boundPasta(cv::Mat &dish, cv::Mat &final, std::string label,
         box = computeBox(final, dish);
         BoundingBox bb;
         bb.box = box;
-        bb.label = label;
+        bb.labels.push_back(label);
         boundingBoxes.push_back(bb);
     }
     return;
+}
+
+void boundPasta(cv::Mat &dish, cv::Mat &final, std::vector<std::string> label,
+                std::vector<int> forbidden, int max_key, std::vector<BoundingBox> &boundingBoxes)
+{
+    bool allowed = true;
+    cv::Rect box;
+    for (int i = 0; i < forbidden.size(); i++)
+    {
+        if (forbidden[i] == max_key)
+        {
+            allowed = false;
+            break;
+        }
+    }
+    if (allowed)
+    {
+
+        box = computeBox(final, dish);
+        BoundingBox bb;
+        bb.box = box;
+        for (std::string lab : label)
+        {
+            bb.labels.push_back(lab);
+        }
+        boundingBoxes.push_back(bb);
+    }
+    return;
+}
+
+void boundSalad(cv::Mat &input, std::vector<cv::Vec3f> accepted_circles,
+                cv::Mat &final, std::vector<BoundingBox> &boundingBoxes)
+{
+    cv::Mat inClone;
+    cv::Mat grayDish;
+
+    int minRadius = 10000;
+    for (cv::Vec3f &c : accepted_circles)
+    {
+        if (c[2] < minRadius)
+        {
+            inClone = 0;
+            minRadius = c[2];
+            cv::Mat mask = cv::Mat::zeros(input.size(), CV_8UC1);
+            cv::Point center = cv::Point(c[0], c[1]);
+            int radius = c[2];
+            cv::circle(mask, center, radius, 255, -1);
+            input.copyTo(inClone, mask);
+        }
+    }
+
+    cv::Mat inHSV;
+    cv::cvtColor(inClone, inHSV, cv::COLOR_BGR2HSV);
+
+    Mat mask;
+    cv::inRange(inHSV, Scalar(0, 200, 200), Scalar(20, 255, 255), mask);
+    for (int i = 0; i < mask.rows; i++)
+        for (int j = 0; j < mask.cols; j++)
+            mask.at<uchar>(i, j) = 255 - mask.at<uchar>(i, j);
+
+    inHSV.setTo(Scalar(0, 0, 0), mask);
+
+    cv::Mat t;
+    cv::cvtColor(inHSV, t, COLOR_HSV2BGR);
+    cv::Rect box = computeBox(final, t);
+
+    BoundingBox bb;
+    bb.box = box;
+    bb.labels.push_back("salad");
+    boundingBoxes.push_back(bb);
 }
 
 void drawBoundingBoxes(cv::Mat &final, std::vector<BoundingBox> &boundingBoxes)
 {
     for (BoundingBox &bb : boundingBoxes)
     {
-        cv::putText(final, bb.label, cv::Point(bb.box.x, bb.box.y - 20), cv::FONT_HERSHEY_COMPLEX, 1, cv::Scalar(0, 0, 255), 2, 8, false);
+        std::string text;
+        int numberFoods = bb.labels.size();
+        for (std::string label : bb.labels)
+        {
+            text = text + std::to_string(100 / numberFoods) + "% " + label + " ";
+        }
+        if (bb.box.y - 20 > 0)
+        {
+            cv::putText(final, text, cv::Point(bb.box.x, bb.box.y - 20), cv::FONT_HERSHEY_COMPLEX, 0.5, cv::Scalar(0, 0, 255), 0.8, 8, false);
+        }
+        else
+        {
+            cv::putText(final, text, cv::Point(bb.box.x, bb.box.y + bb.box.height + 20), cv::FONT_HERSHEY_COMPLEX, 0.5, cv::Scalar(0, 0, 255), 0.8, 8, false);
+        }
         cv::rectangle(final, bb.box, CV_RGB(255, 0, 0), 2);
     }
 }

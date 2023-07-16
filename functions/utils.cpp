@@ -66,6 +66,7 @@ void addFood(int size, std::string fileName, std::string label, int id,
             std::string file = path + fileName + std::to_string(i) + ".jpg";
             temp_template = cv::imread(file, cv::IMREAD_GRAYSCALE);
             myFood.foodTemplates.push_back(temp_template);
+            // showImg("www", temp_template);
         }
     }
 
