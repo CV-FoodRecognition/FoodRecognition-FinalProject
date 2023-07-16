@@ -284,6 +284,11 @@ void Leftover::moreOriginalLessLeftovers(int type, std::vector<Couple> &finalPai
     }
     else if (type == 2)
     {
+        std::cout << "pairMatches: " << std::endl;
+        for (Couple c : pairMatches)
+        {
+            std::cout << pairMatches << std::endl;
+        }
         std::sort(pairMatches.begin(), pairMatches.end(), [](const Couple &a, const Couple &b)
                   { return a.matches > b.matches; });
 
@@ -298,34 +303,20 @@ void Leftover::moreOriginalLessLeftovers(int type, std::vector<Couple> &finalPai
             alreadyAssigned.push_back(couple.leftover);
         }
         // 3RD DISH
-        for (int i = 0; i < originalDishes.size(); i++)
+
+        if (!isAssigned)
         {
-            // Check if the original dish is already assigned
-            bool isAssigned = false;
-            for (const cv::Mat &assigned : alreadyAssigned)
-            {
-                if (assigned.empty() || assigned.size() != originalDishes[i].size() ||
-                    cv::countNonZero(assigned != originalDishes[i]) != 0)
-                {
-                    isAssigned = true;
-                    break;
-                }
-            }
+            Couple couple;
+            couple.leftover = leftoverDishes.back();
+            couple.original = originalDishes[i];
+            couple.matches = 0; // No matches since it's an unassigned leftover
+            finalPairs.push_back(couple);
 
-            // If the original dish is not assigned, assign the remaining leftover to it
-            if (!isAssigned)
-            {
-                Couple couple;
-                couple.leftover = leftoverDishes.back();
-                couple.original = originalDishes[i];
-                couple.matches = 0; // No matches since it's an unassigned leftover
-                finalPairs.push_back(couple);
-
-                // Remove the assigned leftover from the leftoverDishes vector
-                leftoverDishes.pop_back();
-            }
+            // Remove the assigned leftover from the leftoverDishes vector
+            leftoverDishes.pop_back();
         }
     }
+}
 }
 
 // ------------------------------------------------------------------------------------------------------ //
