@@ -23,6 +23,7 @@ struct BoundingBox
 {
     cv::Rect box;
     std::vector<std::string> labels;
+    std::vector<int> ids;
 };
 
 struct foodTemplate
@@ -62,6 +63,13 @@ struct SegmentAreas
     int areaBlack;
     cv::Point topLeft;
     cv::Point bottomRight;
+};
+
+struct Area
+{
+    int area;
+    std::vector<int> ids;
+    cv::Mat segmentedMask;
 };
 
 struct BoxLabel
