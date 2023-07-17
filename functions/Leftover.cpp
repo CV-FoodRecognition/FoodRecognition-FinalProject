@@ -1,7 +1,7 @@
 #include "../headers/Leftover.h"
 
-void Leftover::computeLeftovers(std::vector<cv::Mat> &removedDishes, const std::vector<cv::Mat> &leftovers,
-                                const std::vector<int> &radia1, const std::vector<int> &radia2)
+void Leftover::matchLeftovers(std::vector<cv::Mat> &removedDishes, const std::vector<cv::Mat> &leftovers,
+                              const std::vector<int> &radia1, const std::vector<int> &radia2)
 {
     Result res1, res2, res3;
     bool hasThreeOriginals = removedDishes.size() == 3;
@@ -11,18 +11,26 @@ void Leftover::computeLeftovers(std::vector<cv::Mat> &removedDishes, const std::
     // Original FOR 1 DISH
     cv::Mat original1 = removedDishes[0];
     cv::Scalar avgOriginal1 = computeAvgColor(original1);
-    cv::Scalar avgCIELABOriginal1 = computeAvgColorCIELAB(original1);
+
+    cv::Mat original1CIE = convertBGRtoCIELAB(original1);
+    cv::Scalar avgCIELABOriginal1 = computeAvgColorCIELAB(original1CIE);
+
     avgOriginals.push_back(avgOriginal1);
     avgCIELABOriginals.push_back(avgCIELABOriginal1);
+    originalsCIELAB.push_back(original1CIE);
 
     // Original FOR 2 DISHES
     if (removedDishes.size() > 1)
     {
         cv::Mat original2 = removedDishes[1];
         cv::Scalar avgOriginal2 = computeAvgColor(original2);
-        cv::Scalar avgCIELABOriginal2 = computeAvgColorCIELAB(original2);
-        avgCIELABOriginals.push_back(avgCIELABOriginal2);
+
+        cv::Mat original2CIE = convertBGRtoCIELAB(original2);
+        cv::Scalar avgCIELABOriginal2 = computeAvgColorCIELAB(original2CIE);
+
         avgOriginals.push_back(avgOriginal2);
+        avgCIELABOriginals.push_back(avgCIELABOriginal2);
+        originalsCIELAB.push_back(original2CIE);
     }
 
     // Removes dishes from leftovers
@@ -45,20 +53,28 @@ void Leftover::computeLeftovers(std::vector<cv::Mat> &removedDishes, const std::
     }
 
     // LEFT for 1 DISH
-    cv::Mat left1 = removedLeftovers[0];                      // removed dish
-    cv::Scalar avgLeft1 = computeAvgColor(left1);             // average color
-    cv::Scalar avgCIELABLeft1 = computeAvgColorCIELAB(left1); // average cielab color
+    cv::Mat left1 = removedLeftovers[0];          // removed dish
+    cv::Scalar avgLeft1 = computeAvgColor(left1); // average color
+
+    cv::Mat left1CIE = convertBGRtoCIELAB(left1);
+    cv::Scalar avgCIELABLeft1 = computeAvgColorCIELAB(left1CIE); // average cielab color
+
     avgLefts.push_back(avgLeft1);
     avgCIELABLefts.push_back(avgCIELABLeft1);
+    leftoversCIELAB.push_back(left1CIE);
 
     // LEFT for 2 DISHES
     if (removedLeftovers.size() > 1)
     {
         cv::Mat left2 = removedLeftovers[1];
         cv::Scalar avgLeft2 = computeAvgColor(left2);
-        cv::Scalar avgCIELABLeft2 = computeAvgColorCIELAB(left2);
+
+        cv::Mat left2CIE = convertBGRtoCIELAB(left2);
+        cv::Scalar avgCIELABLeft2 = computeAvgColorCIELAB(left2CIE);
+
         avgLefts.push_back(avgLeft2);
         avgCIELABLefts.push_back(avgCIELABLeft2);
+        leftoversCIELAB.push_back(left2CIE);
     }
 
     // IF ORIGINAL DISHES ARE 3...
@@ -68,22 +84,33 @@ void Leftover::computeLeftovers(std::vector<cv::Mat> &removedDishes, const std::
     { // 3 ORIGINALS
         original3 = removedDishes[2];
         avgOriginal3 = computeAvgColor(original3);
-        avgCIELABOriginal3 = computeAvgColorCIELAB(original3);
+
+        cv::Mat original3CIE = convertBGRtoCIELAB(original3);
+        cv::Scalar avgCIELABOriginal3 = computeAvgColorCIELAB(original3CIE);
+
         avgOriginals.push_back(avgOriginal3);
         avgCIELABOriginals.push_back(avgCIELABOriginal3);
+        originalsCIELAB.push_back(original3CIE);
     }
     // IF LEFTOVER DISHES ARE 3...
     if (hasThreeLeftovers)
     { // 3 LEFTOVERS
         left3 = removedLeftovers[2];
         avgLeft3 = computeAvgColor(left3);
+
+        cv::Mat left3CIE = convertBGRtoCIELAB(left3);
+        cv::Scalar avgCIELABLeft3 = computeAvgColorCIELAB(left3CIE);
+
         avgCIELABLeftover3 = computeAvgColorCIELAB(left3);
         avgLefts.push_back(avgLeft3);
         avgCIELABLefts.push_back(avgCIELABLeftover3);
+        leftoversCIELAB.push_back(left3CIE);
     }
 
     originalDishes = removedDishes;
     leftoverDishes = removedLeftovers;
+
+    breadSegmenter();
 
     /*
         For every circle in removedDishes (original dishes):
@@ -94,7 +121,8 @@ void Leftover::computeLeftovers(std::vector<cv::Mat> &removedDishes, const std::
             - compute area of Original Dish, compute area of Leftover picked by # of matches
             - add areas to vector of original areas and vector of leftover areas
     */
-    std::vector<int> matches; // vector of matches, is cleared at every iteration
+    std::vector<int>
+        matches; // vector of matches, is cleared at every iteration
     for (int i = 0; i < removedDishes.size(); i++)
     {
         res1 = useDescriptor(removedDishes[i], removedLeftovers[0], DescriptorType::SIFT);
@@ -155,13 +183,14 @@ void Leftover::computeLeftovers(std::vector<cv::Mat> &removedDishes, const std::
     std::cout << "pairAvgColors: " << pairAvgColors.size() << std::endl;
 
     // COUPLE by SEGMENT COLORS
-    pairCieAvgs = coupleCIELABColors(removedDishes, removedLeftovers);
+    bool flag = true;
+    pairCieAvgs = coupleCIELABColors(removedDishes, removedLeftovers, flag);
     std::cout << "pairAvgCIELAB: " << pairCieAvgs.size() << std::endl;
 
-    /* printVector(pairArea, "Pair Area");
-      printVector(pairAvgColors, "Pair Color");
-      printVector(pairMatches, "Pair Matches");
-      printVector(pairCieAvgs, "Pair Segments");*/
+    printVector(pairArea, "Pair Area");
+    printVector(pairAvgColors, "Pair Color");
+    printVector(pairMatches, "Pair Matches");
+    printVector(pairCieAvgs, "Pair CIE");
 
     jointPredictions();
 }
@@ -333,30 +362,56 @@ void Leftover::moreOriginalLessLeftovers(int type, std::vector<Couple> &finalPai
     so the area will differ a lot.
     But it can be used for leftover level 1, where the area stays similar.
 */
-std::vector<Couple> Leftover::coupleCIELABColors(const std::vector<cv::Mat> &originals, const std::vector<cv::Mat> &leftovers)
+std::vector<Couple> Leftover::coupleCIELABColors(const std::vector<cv::Mat> &originals, const std::vector<cv::Mat> &leftovers, bool flag)
 {
     std::vector<Couple> result;
-
-    for (int i = 0; i < avgCIELABOriginals.size(); i++)
+    if (flag == 0)
     {
-        const cv::Scalar &avgOriginal = avgCIELABOriginals[i];
-        double minDist = std::numeric_limits<double>::max();
-        int closestIndex = 0;
-        for (int j = 0; j < avgCIELABLefts.size(); j++)
+        for (int i = 0; i < avgCIELABOriginals.size(); i++)
         {
-            const cv::Scalar &avgLeft = avgCIELABLefts[j];
-            double dist = cv::norm(avgOriginal - avgLeft, cv::NORM_L2);
-            if (dist < minDist)
+            const cv::Scalar &avgOriginal = avgCIELABOriginals[i];
+            double minDist = std::numeric_limits<double>::max();
+            int closestIndex = 0;
+            for (int j = 0; j < avgCIELABLefts.size(); j++)
             {
-                minDist = dist;
-                closestIndex = j;
+                const cv::Scalar &avgLeft = avgCIELABLefts[j];
+                double dist = computeDeltaE(avgOriginal, avgLeft);
+                if (dist < minDist)
+                {
+                    minDist = dist;
+                    closestIndex = j;
+                }
             }
+            Couple couple;
+            couple.original = originals[i];
+            couple.leftover = leftovers[closestIndex];
+            couple.dist = minDist;
+            result.push_back(couple);
         }
-        Couple couple;
-        couple.original = originals[i];
-        couple.leftover = leftovers[closestIndex];
-        couple.dist = minDist;
-        result.push_back(couple);
+    }
+    else if (flag == 1)
+    {
+        for (int i = 0; i < avgCIELABOriginals.size(); i++)
+        {
+            const cv::Scalar &avgOriginal = avgCIELABOriginals[i];
+            double minDist = std::numeric_limits<double>::max();
+            int closestIndex = 0;
+            for (int j = 0; j < avgCIELABLefts.size(); j++)
+            {
+                const cv::Scalar &avgLeft = avgCIELABLefts[j];
+                double dist = cv::norm(avgOriginal - avgLeft, cv::NORM_L2);
+                if (dist < minDist)
+                {
+                    minDist = dist;
+                    closestIndex = j;
+                }
+            }
+            Couple couple;
+            couple.original = originals[i];
+            couple.leftover = leftovers[closestIndex];
+            couple.dist = minDist;
+            result.push_back(couple);
+        }
     }
     return result;
 }
@@ -523,6 +578,19 @@ void Leftover::assignBoundingBoxes(std::vector<BoundingBox> &boxes, std::vector<
 {
 }
 
+void Leftover::breadSegmenter()
+{
+    for (cv::Mat &o : originalsCIELAB)
+    {
+        // showImg("o", o);
+    }
+
+    for (cv::Mat &l : leftoversCIELAB)
+    {
+        // showImg("l", l);
+    }
+}
+
 // ------------------------------------------------------------------------------------------------------ //
 /*
     Checks if the Original is the same as the Original predicted
@@ -556,4 +624,12 @@ void printVector(const std::vector<Couple> &pairs, const std::string &title)
         i++;
         concatShowImg(title, pair.original, pair.leftover);
     }
+}
+
+double computeDeltaE(const cv::Scalar &c1, const cv::Scalar &c2)
+{
+    double deltaL = c1[0] - c2[0];
+    double deltaA = c1[1] - c2[1];
+    double deltaB = c1[2] - c2[2];
+    return std::sqrt(deltaL * deltaL + deltaA * deltaA + deltaB * deltaB);
 }

@@ -16,8 +16,8 @@ class Leftover
 
 public:
     // HANDLER
-    void computeLeftovers(std::vector<cv::Mat> &removedDishes, const std::vector<cv::Mat> &leftovers,
-                          const std::vector<int> &radia1, const std::vector<int> &radia2);
+    void matchLeftovers(std::vector<cv::Mat> &removedDishes, const std::vector<cv::Mat> &leftovers,
+                        const std::vector<int> &radia1, const std::vector<int> &radia2);
 
     // GETTERS
     std::vector<Couple> getPairAvgColors() const { return pairAvgColors; }
@@ -31,22 +31,25 @@ public:
 private:
     // ------------------------------------------------------------------------------------------------------ //
     // Variables
-    std::vector<double> circleAreasOriginal;    // vector of areas of dishes in original tray
-    std::vector<double> circleAreasLeftover;    // vector of areas of dishes in leftover tray
-    std::vector<cv::Scalar> avgOriginals;       // vector of average colors for original images in the tray
-    std::vector<cv::Scalar> avgLefts;           // vector of average colors for leftover images in the tray
+    std::vector<Couple> pairAvgColors, pairArea, pairMatches, pairCieAvgs; // Final pair vectors.
+    std::vector<cv::Mat> originalDishes, leftoverDishes,                   // original dishes and leftovers
+        segmentedOriginal, segmentedLeftovers;                             // segmented original and leftovers
+
     std::vector<cv::Mat> originalsCIELAB;       // vector of CIELAB images for original images in the tray
     std::vector<cv::Mat> leftoversCIELAB;       // vector of CIELAB images for leftover images in the tray
     std::vector<cv::Scalar> avgCIELABOriginals; // vector of average colors for CIELAB original images in the tray
     std::vector<cv::Scalar> avgCIELABLefts;     // vector of average colors for CIELAB leftover images in the tray
 
-    std::vector<Couple> pairAvgColors, pairArea, pairMatches, pairCieAvgs;
-    std::vector<cv::Mat> originalDishes, leftoverDishes, segmentedOriginal, segmentedLeftovers;
+    std::vector<cv::Scalar> avgOriginals; // vector of average colors for original images in the tray
+    std::vector<cv::Scalar> avgLefts;     // vector of average colors for leftover images in the tray
+
+    std::vector<double> circleAreasOriginal; // vector of areas of dishes in original tray
+    std::vector<double> circleAreasLeftover; // vector of areas of dishes in leftover tray
 
     // ------------------------------------------------------------------------------------------------------ //
     // measurments methods      -->     @return: Couple
 
-    std::vector<Couple> coupleCIELABColors(const std::vector<cv::Mat> &originals, const std::vector<cv::Mat> &leftovers);
+    std::vector<Couple> coupleCIELABColors(const std::vector<cv::Mat> &originals, const std::vector<cv::Mat> &leftovers, bool flag);
     std::vector<Couple> coupleClosestElements(const std::vector<cv::Mat> &originals, const std::vector<cv::Mat> &leftovers);
     std::vector<Couple> coupleMinAverageColor(const std::vector<cv::Mat> &originals, const std::vector<cv::Mat> &leftovers);
     Couple coupleMaxMatches(const std::vector<int> &matches, std::vector<cv::Mat> &leftovers, const cv::Mat &original);
@@ -54,6 +57,9 @@ private:
     // TODO:
     // All dishes must be linked to different dishes, one leftover dish cannot be predicted for two original dishes
     void allDishesDifferent(std::vector<Couple> &finalPairs, const std::vector<int> &counterVec);
+    // TODO:
+    //  Bread segmenter and area computing
+    void breadSegmenter();
 
     // ------------------------------------------------------------------------------------------------------ //
 
@@ -74,5 +80,7 @@ private:
 bool checkCouplesEqual(const Couple &a, const Couple &b);
 // utils for Leftover -- prints a vector of couples (which can be all passed pairs: by matches, avgcolor, cielab_avgcolor etc.)
 void printVector(const std::vector<Couple> &pairs, const std::string &title);
+// utils for Leftover -- delta E computation for CIELAB comparison
+double computeDeltaE(const cv::Scalar &c1, const cv::Scalar &c2);
 
 #endif // LEFTOVER_CLASS_H

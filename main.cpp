@@ -145,9 +145,9 @@ int main(int argc, char **argv)
    } */
 
     Leftover leftover;
-    leftover.computeLeftovers(removedDishes, leftovers, radia1, radia2);
+    leftover.matchLeftovers(removedDishes, leftovers, radia1, radia2);
 
-    cout << "\n --------------- \n fine leftovers" << endl;
+    cout << "\n---------------\nfine leftovers" << endl;
 
     // SEGMENTATION
     /* for (int i = 0; i < segmentedImages.size(); i++)
