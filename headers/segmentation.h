@@ -10,7 +10,8 @@ void removeShadows(cv::Mat &src, cv::Mat &dst);
 void removeBackground(cv::Mat &src);
 cv::Scalar computeAvgColor(cv::Mat shifted, cv::Rect box);
 cv::Scalar computeAvgColor(cv::Mat shifted);
-cv::Scalar computeAvgColorHSV(cv::Mat shifted);
+cv::Scalar computeAvgColorHSV(cv::Mat &img);
+cv::Scalar computeAvgColorCIELAB(const cv::Mat &input);
 int computeBestDish(foodTemplate food, std::vector<cv::Mat> dishes, std::vector<int> dishesMatches);
 void boundPasta(cv::Mat &dish, cv::Mat &final, std::string label,
                 std::vector<int> forbidden, int max_key, std::vector<BoundingBox> &boundingBoxes);

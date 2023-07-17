@@ -8,7 +8,6 @@ extern int low_k;
 extern cv::Mat src;
 extern std::vector<int> kmeans_labels;
 extern cv::Mat1f colors;
-
 Scalar computeAvgColor(Mat shifted, Rect box)
 {
     Mat roi = shifted(box);
@@ -19,7 +18,7 @@ Scalar computeAvgColor(Mat shifted, Rect box)
 
     // Create mask to exclude colors outside of bounds
     Mat mask;
-    inRange(roi, lowerb, upperb, mask);
+    cv::inRange(roi, lowerb, upperb, mask); // Specify the namespace explicitly
     Scalar avg_color = mean(roi, mask);
     Mat image(100, 100, CV_8UC3, avg_color);
     // showImg("average color", image);
@@ -35,7 +34,7 @@ Scalar computeAvgColor(Mat shifted)
 
     // Create mask to exclude colors outside of bounds
     Mat mask;
-    inRange(shifted, lowerb, upperb, mask);
+    cv::inRange(shifted, lowerb, upperb, mask); // Specify the namespace explicitly
     Scalar avg_color = mean(shifted, mask);
     Mat image(100, 100, CV_8UC3, avg_color);
     // showImg("average color", image);
@@ -43,48 +42,45 @@ Scalar computeAvgColor(Mat shifted)
     return avg_color;
 }
 
-cv::Scalar computeAvgColorHSV(cv::Mat img)
+cv::Scalar computeAvgColorHSV(cv::Mat &input)
 {
-    if (img.channels() != 3 || img.type() != CV_8UC3)
+    if (input.channels() != 3 || input.type() != CV_8UC3)
     {
         std::cerr << "Error: Image is not in BGR format." << std::endl;
     }
-    Mat input = img.clone();
-    // showImg("dish", input);
+    cv::Mat img = input.clone();
 
-    Mat hsv;
-    cv::cvtColor(input, hsv, cv::COLOR_BGR2HSV);
+    cv::Mat hsv;
+    cv::cvtColor(img, hsv, cv::COLOR_BGR2HSV);
 
-    Mat mask_yellow;
-    inRange(hsv, Scalar(14, 0, 0), Scalar(25, 255, 255), mask_yellow);
-    // for (int i = 0; i < mask_yellow.rows; i++)
-    //{
-    //     for (int j = 0; j < mask_yellow.cols; j++)
-    //     {
-    //         mask_yellow.at<uchar>(i, j) = 255 - mask_yellow.at<uchar>(i, j);
-    //     }
-    // }
-    hsv.setTo(Scalar(0, 0, 0), mask_yellow);
-    cv::cvtColor(hsv, input, cv::COLOR_HSV2BGR);
+    cv::Mat mask_yellow;
+    cv::inRange(hsv, cv::Scalar(14, 0, 0), cv::Scalar(25, 255, 255), mask_yellow); // Specify the namespace explicitly
 
-    // showImg("noYellow", input);
+    hsv.setTo(cv::Scalar(0, 0, 0), mask_yellow);
+    cv::cvtColor(hsv, img, cv::COLOR_HSV2BGR);
 
     // Define lower and upper bounds for colors to include
-    Scalar lowerb = Scalar(25, 0, 0);
-    Scalar upperb = Scalar(255, 255, 255);
+    cv::Scalar lowerb = cv::Scalar(25, 0, 0);
+    cv::Scalar upperb = cv::Scalar(255, 255, 255);
     // Create mask to exclude colors outside of bounds
-    Mat mask;
-    inRange(input, lowerb, upperb, mask);
-    Scalar avg_color = mean(input, mask);
+    cv::Mat mask;
+    cv::inRange(img, lowerb, upperb, mask); // Specify the namespace explicitly
+    cv::Scalar avg_color = cv::mean(img, mask);
 
-    Mat color(100, 100, CV_8UC3, avg_color);
+    cv::Mat color(100, 100, CV_8UC3, avg_color);
     // showImg("average color", color);
 
     cv::cvtColor(color, hsv, cv::COLOR_BGR2HSV);
-    Scalar hsv_color = hsv.at<cv::Vec3b>(1, 1);
-    cout << "hue: " << hsv_color[0] << endl;
+    cv::Scalar hsv_color = hsv.at<cv::Vec3b>(1, 1);
+    std::cout << "hue: " << hsv_color[0] << std::endl;
 
     return hsv_color;
+}
+
+cv::Scalar computeAvgColorCIELAB(const cv::Mat &input)
+{
+    cv::Scalar avg_color = cv::mean(input);
+    return avg_color;
 }
 
 int computeBestDish(foodTemplate food, std::vector<cv::Mat> dishes, std::vector<int> dishesMatches)

@@ -75,10 +75,10 @@ int main(int argc, char **argv)
     std::vector<cv::Vec3f> &acceptedCircles = imgProc.getAcceptedCircles();
 
     // Hough Transform 2
-    // ImageProcessor imgProcLeftovers;
-    // imgProcLeftovers.doHough(leftoverImg);
-    // std::vector<cv::Mat> &leftovers = imgProcLeftovers.getDishes();
-    // std::vector<int> &radia2 = imgProcLeftovers.getRadius();
+    ImageProcessor imgProcLeftovers;
+    imgProcLeftovers.doHough(leftoverImg);
+    std::vector<cv::Mat> &leftovers = imgProcLeftovers.getDishes();
+    std::vector<int> &radia2 = imgProcLeftovers.getRadius();
 
     /*
         1st method:
@@ -132,8 +132,8 @@ int main(int argc, char **argv)
         imwrite("../images/Results/kmeansResult" + to_string(d) + ".jpg", r); */
     }
 
-    detectAndRecognize(dishes, templates, dishesMatches, in1, final, result, acceptedCircles);
-    showImg("FINALE", final);
+    // detectAndRecognize(dishes, templates, dishesMatches, in1, final, result, acceptedCircles);
+    // showImg("FINALE", final);
 
     cout << "XX" << endl;
 
@@ -144,10 +144,10 @@ int main(int argc, char **argv)
        segmentedImages.push_back(segmentedImg);
    } */
 
-    // Leftover leftover;
-    // leftover.computeLeftovers(removedDishes, leftovers, radia1, radia2);
+    Leftover leftover;
+    leftover.computeLeftovers(removedDishes, leftovers, radia1, radia2);
 
-    cout << "fine" << endl;
+    cout << "\n --------------- \n fine leftovers" << endl;
 
     // SEGMENTATION
     /* for (int i = 0; i < segmentedImages.size(); i++)
