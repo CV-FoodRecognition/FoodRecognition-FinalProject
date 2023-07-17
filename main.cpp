@@ -145,7 +145,7 @@ int main(int argc, char **argv)
    } */
 
     Leftover leftover;
-    leftover.matchLeftovers(removedDishes, leftovers, radia1, radia2);
+    leftover.matchLeftovers(removedDishes, leftovers, leftoverImg, radia1, radia2);
 
     cout << "\n---------------\nfine leftovers" << endl;
 
@@ -163,11 +163,6 @@ int main(int argc, char **argv)
                  << "\nArea nera: " << sa.areaBlack << endl;
         }
     } */
-
-    /*
-        Compute probability for objects
-    */
-    // computeProbability();
 
     return 0;
 }

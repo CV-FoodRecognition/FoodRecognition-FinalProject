@@ -1,7 +1,7 @@
 #include "../headers/Leftover.h"
 
 void Leftover::matchLeftovers(std::vector<cv::Mat> &removedDishes, const std::vector<cv::Mat> &leftovers,
-                              const std::vector<int> &radia1, const std::vector<int> &radia2)
+                              cv::Mat leftover, const std::vector<int> &radia1, const std::vector<int> &radia2)
 {
     Result res1, res2, res3;
     bool hasThreeOriginals = removedDishes.size() == 3;
@@ -17,7 +17,6 @@ void Leftover::matchLeftovers(std::vector<cv::Mat> &removedDishes, const std::ve
 
     avgOriginals.push_back(avgOriginal1);
     avgCIELABOriginals.push_back(avgCIELABOriginal1);
-    originalsCIELAB.push_back(original1CIE);
 
     // Original FOR 2 DISHES
     if (removedDishes.size() > 1)
@@ -30,7 +29,6 @@ void Leftover::matchLeftovers(std::vector<cv::Mat> &removedDishes, const std::ve
 
         avgOriginals.push_back(avgOriginal2);
         avgCIELABOriginals.push_back(avgCIELABOriginal2);
-        originalsCIELAB.push_back(original2CIE);
     }
 
     // Removes dishes from leftovers
@@ -61,7 +59,6 @@ void Leftover::matchLeftovers(std::vector<cv::Mat> &removedDishes, const std::ve
 
     avgLefts.push_back(avgLeft1);
     avgCIELABLefts.push_back(avgCIELABLeft1);
-    leftoversCIELAB.push_back(left1CIE);
 
     // LEFT for 2 DISHES
     if (removedLeftovers.size() > 1)
@@ -74,7 +71,6 @@ void Leftover::matchLeftovers(std::vector<cv::Mat> &removedDishes, const std::ve
 
         avgLefts.push_back(avgLeft2);
         avgCIELABLefts.push_back(avgCIELABLeft2);
-        leftoversCIELAB.push_back(left2CIE);
     }
 
     // IF ORIGINAL DISHES ARE 3...
@@ -90,7 +86,6 @@ void Leftover::matchLeftovers(std::vector<cv::Mat> &removedDishes, const std::ve
 
         avgOriginals.push_back(avgOriginal3);
         avgCIELABOriginals.push_back(avgCIELABOriginal3);
-        originalsCIELAB.push_back(original3CIE);
     }
     // IF LEFTOVER DISHES ARE 3...
     if (hasThreeLeftovers)
@@ -104,13 +99,12 @@ void Leftover::matchLeftovers(std::vector<cv::Mat> &removedDishes, const std::ve
         avgCIELABLeftover3 = computeAvgColorCIELAB(left3);
         avgLefts.push_back(avgLeft3);
         avgCIELABLefts.push_back(avgCIELABLeftover3);
-        leftoversCIELAB.push_back(left3CIE);
     }
 
     originalDishes = removedDishes;
     leftoverDishes = removedLeftovers;
 
-    breadSegmenter();
+    breadFinder(leftover);
 
     /*
         For every circle in removedDishes (original dishes):
@@ -187,10 +181,10 @@ void Leftover::matchLeftovers(std::vector<cv::Mat> &removedDishes, const std::ve
     pairCieAvgs = coupleCIELABColors(removedDishes, removedLeftovers, flag);
     std::cout << "pairAvgCIELAB: " << pairCieAvgs.size() << std::endl;
 
-    printVector(pairArea, "Pair Area");
+    /*printVector(pairArea, "Pair Area");
     printVector(pairAvgColors, "Pair Color");
     printVector(pairMatches, "Pair Matches");
-    printVector(pairCieAvgs, "Pair CIE");
+    printVector(pairCieAvgs, "Pair CIE");*/
 
     jointPredictions();
 }
@@ -578,17 +572,14 @@ void Leftover::assignBoundingBoxes(std::vector<BoundingBox> &boxes, std::vector<
 {
 }
 
-void Leftover::breadSegmenter()
+void Leftover::breadFinder(cv::Mat &leftover)
 {
-    for (cv::Mat &o : originalsCIELAB)
-    {
-        // showImg("o", o);
-    }
-
-    for (cv::Mat &l : leftoversCIELAB)
-    {
-        // showImg("l", l);
-    }
+    cv::Mat final = leftover.clone(); // Final image - Result
+    std::vector<BoundingBox> bboxes;  // Bounding Boxes
+    boundBread(leftover, leftoverDishes, final, bboxes);
+    std::cout << "final size: " << final.size() << std::endl;
+    drawBoundingBoxes(final, bboxes);
+    showImg("pane", final);
 }
 
 // ------------------------------------------------------------------------------------------------------ //

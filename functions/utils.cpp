@@ -91,6 +91,28 @@ cv::Mat convertBGRtoCIELAB(const cv::Mat &bgrImage)
     }
 }
 
+std::vector<cv::Mat> convertBGRtoCIELAB(const std::vector<cv::Mat> &bgrImages)
+{
+    std::vector<cv::Mat> cielabImages;
+
+    for (const cv::Mat &bgrImage : bgrImages)
+    {
+        if (bgrImage.channels() == 3 && bgrImage.type() == CV_8UC3)
+        {
+            cv::Mat cielabImage;
+            cv::cvtColor(bgrImage, cielabImage, cv::COLOR_BGR2Lab);
+            cielabImages.push_back(cielabImage);
+        }
+        else
+        {
+            std::cerr << "Warning: Image is not in BGR format. Skipping conversion." << std::endl;
+            cielabImages.push_back(cv::Mat());
+        }
+    }
+
+    return cielabImages;
+}
+
 cv::Rect computeBox(cv::Mat &final, cv::Mat &dish)
 {
     int x = final.cols;

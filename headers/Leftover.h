@@ -17,7 +17,7 @@ class Leftover
 public:
     // HANDLER
     void matchLeftovers(std::vector<cv::Mat> &removedDishes, const std::vector<cv::Mat> &leftovers,
-                        const std::vector<int> &radia1, const std::vector<int> &radia2);
+                        cv::Mat leftover, const std::vector<int> &radia1, const std::vector<int> &radia2);
 
     // GETTERS
     std::vector<Couple> getPairAvgColors() const { return pairAvgColors; }
@@ -59,7 +59,7 @@ private:
     void allDishesDifferent(std::vector<Couple> &finalPairs, const std::vector<int> &counterVec);
     // TODO:
     //  Bread segmenter and area computing
-    void breadSegmenter();
+    void breadFinder(cv::Mat &leftover);
 
     // ------------------------------------------------------------------------------------------------------ //
 

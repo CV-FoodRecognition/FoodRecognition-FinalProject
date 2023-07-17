@@ -89,6 +89,7 @@ void concatShowImg(std::string title, cv::Mat image1, cv::Mat image2);
 void sharpenImg(cv::Mat &src, SharpnessType t);
 cv::Mat convertGray(cv::Mat &src);
 cv::Mat convertBGRtoCIELAB(const cv::Mat &bgrImage);
+std::vector<cv::Mat> convertBGRtoCIELAB(const std::vector<cv::Mat> &bgrImages);
 void removeDish(cv::Mat &shifted);
 double computeArea(cv::Rect box);
 cv::Rect computeBox(cv::Mat &final, cv::Mat &dish);
