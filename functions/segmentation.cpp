@@ -8,74 +8,6 @@ extern int low_k;
 extern cv::Mat src;
 extern std::vector<int> kmeans_labels;
 extern cv::Mat1f colors;
-Scalar computeAvgColor(Mat shifted, Rect box)
-{
-    Mat roi = shifted(box);
-
-    // Define lower and upper bounds for colors to include
-    Scalar lowerb = Scalar(15, 15, 15);
-    Scalar upperb = Scalar(240, 240, 240);
-
-    // Create mask to exclude colors outside of bounds
-    Mat mask;
-    cv::inRange(roi, lowerb, upperb, mask); // Specify the namespace explicitly
-    Scalar avg_color = mean(roi, mask);
-    Mat image(100, 100, CV_8UC3, avg_color);
-    // showImg("average color", image);
-
-    return avg_color;
-}
-
-Scalar computeAvgColor(Mat shifted)
-{
-    // Define lower and upper bounds for colors to include
-    Scalar lowerb = Scalar(15, 15, 15);
-    Scalar upperb = Scalar(240, 240, 240);
-
-    // Create mask to exclude colors outside of bounds
-    Mat mask;
-    cv::inRange(shifted, lowerb, upperb, mask); // Specify the namespace explicitly
-    Scalar avg_color = mean(shifted, mask);
-    Mat image(100, 100, CV_8UC3, avg_color);
-    // showImg("average color", image);
-
-    return avg_color;
-}
-
-cv::Scalar computeAvgColorHSV(cv::Mat &input)
-{
-    if (input.channels() != 3 || input.type() != CV_8UC3)
-    {
-        std::cerr << "Error: Image is not in BGR format." << std::endl;
-    }
-    cv::Mat img = input.clone();
-
-    cv::Mat hsv;
-    cv::cvtColor(img, hsv, cv::COLOR_BGR2HSV);
-
-    cv::Mat mask_yellow;
-    cv::inRange(hsv, cv::Scalar(14, 0, 0), cv::Scalar(25, 255, 255), mask_yellow); // Specify the namespace explicitly
-
-    hsv.setTo(cv::Scalar(0, 0, 0), mask_yellow);
-    cv::cvtColor(hsv, img, cv::COLOR_HSV2BGR);
-
-    // Define lower and upper bounds for colors to include
-    cv::Scalar lowerb = cv::Scalar(25, 0, 0);
-    cv::Scalar upperb = cv::Scalar(255, 255, 255);
-    // Create mask to exclude colors outside of bounds
-    cv::Mat mask;
-    cv::inRange(img, lowerb, upperb, mask); // Specify the namespace explicitly
-    cv::Scalar avg_color = cv::mean(img, mask);
-
-    cv::Mat color(100, 100, CV_8UC3, avg_color);
-    // showImg("average color", color);
-
-    cv::cvtColor(color, hsv, cv::COLOR_BGR2HSV);
-    cv::Scalar hsv_color = hsv.at<cv::Vec3b>(1, 1);
-    std::cout << "hue: " << hsv_color[0] << std::endl;
-
-    return hsv_color;
-}
 
 cv::Scalar computeAvgColorCIELAB(const cv::Mat &input)
 {
@@ -83,48 +15,8 @@ cv::Scalar computeAvgColorCIELAB(const cv::Mat &input)
     return avg_color;
 }
 
-int computeBestDish(foodTemplate food, std::vector<cv::Mat> dishes, std::vector<int> dishesMatches)
-{
-    int best_dish_id = -1;
-    for (int d = 0; d < dishesMatches.size(); d++)
-    {
-        std::cout << "dishes matches:  " << dishesMatches[d] << std::endl;
-        Scalar avgColor = computeAvgColorHSV(dishes[d]);
-
-        if (food.id == 1)
-        {
-            if (avgColor[0] > 30 && avgColor[0] < 50)
-            {
-                best_dish_id = d;
-                return d;
-            }
-        }
-        if (food.id == 2 || food.id == 3)
-        {
-            if (avgColor[0] > 0 && avgColor[0] < 11)
-            {
-                best_dish_id = d;
-                return d;
-            }
-        }
-        if (food.id == 4)
-        {
-            if (avgColor[0] > 10 && avgColor[0] < 20)
-            {
-                best_dish_id = d;
-                return d;
-            }
-        }
-        if (dishesMatches[d] > dishesMatches[best_dish_id])
-        {
-            best_dish_id = d;
-        }
-    }
-    return best_dish_id;
-}
-
-void boundBread(cv::Mat &input, std::vector<cv::Mat> &dishes,
-                cv::Mat &final, std::vector<BoundingBox> &boundingBoxes)
+int boundBreadLeftover(cv::Mat &input, std::vector<cv::Mat> &dishes,
+                       cv::Mat &final, std::vector<FoodData> &boundingBoxes)
 {
     cv::Mat inClone = input.clone();
     cv::Mat grayDish;
@@ -139,18 +31,24 @@ void boundBread(cv::Mat &input, std::vector<cv::Mat> &dishes,
     cv::Mat inHSV;
     cv::cvtColor(inClone, inHSV, cv::COLOR_BGR2HSV);
 
-    Mat mask;
+    cv::Mat inCIELAB;
+    cv::cvtColor(inClone, inCIELAB, cv::COLOR_BGR2Lab);
+
+    Mat mask, mask2;
     cv::inRange(inHSV, Scalar(12, 78, 180), Scalar(25, 110, 240), mask);
+    cv::inRange(inHSV, Scalar(12, 30, 70), Scalar(30, 140, 240), mask2);
+    // showImg("mask2", mask2);
+
     for (int i = 0; i < mask.rows; i++)
         for (int j = 0; j < mask.cols; j++)
             mask.at<uchar>(i, j) = 255 - mask.at<uchar>(i, j);
 
     inHSV.setTo(Scalar(0, 0, 0), mask);
 
-    int kernelSize = 9;
+    int kernelSize = 15;
     cv::Mat kernel = getStructuringElement(MORPH_RECT, Size(kernelSize, kernelSize));
     erode(inHSV, inHSV, kernel);
-    kernelSize = 9;
+    kernelSize = 15;
     kernel = getStructuringElement(MORPH_RECT, Size(kernelSize, kernelSize));
     dilate(inHSV, inHSV, kernel);
 
@@ -159,127 +57,41 @@ void boundBread(cv::Mat &input, std::vector<cv::Mat> &dishes,
 
     cv::Rect box = computeBox(final, t);
 
-    BoundingBox bb;
+    int area = enlargeBoxAndComputeArea(box, mask2, t);
+
+    FoodData bb;
     bb.box = box;
+
     bb.labels.push_back("bread");
+    bb.ids.push_back(13);
     boundingBoxes.push_back(bb);
+
+    return area;
 }
 
-void boundPasta(cv::Mat &dish, cv::Mat &final, std::string label,
-                std::vector<int> forbidden, int max_key, std::vector<BoundingBox> &boundingBoxes)
+int enlargeBoxAndComputeArea(cv::Rect box, cv::Mat inHSV, cv::Mat t)
 {
-    bool allowed = true;
-    cv::Rect box;
-    for (int i = 0; i < forbidden.size(); i++)
-    {
-        if (forbidden[i] == max_key)
-        {
-            allowed = false;
-            break;
-        }
-    }
-    if (allowed)
-    {
+    // Enlarge the box
+    int enlargementFactor = 4; // If box is not good adjust this factor
+    cv::Rect enlargedBox = box;
+    enlargedBox.x -= enlargementFactor * box.width;
+    enlargedBox.y -= enlargementFactor * box.height;
+    enlargedBox.width += 2 * enlargementFactor * box.width;
+    enlargedBox.height += 2 * enlargementFactor * box.height;
 
-        box = computeBox(final, dish);
-        BoundingBox bb;
-        bb.box = box;
-        bb.labels.push_back(label);
-        boundingBoxes.push_back(bb);
-    }
-    return;
-}
+    // Enlarged box must be within image boundaries
+    enlargedBox.x = std::max(enlargedBox.x, 0);
+    enlargedBox.y = std::max(enlargedBox.y, 0);
+    enlargedBox.width = std::min(enlargedBox.width, inHSV.cols - enlargedBox.x);
+    enlargedBox.height = std::min(enlargedBox.height, inHSV.rows - enlargedBox.y);
 
-void boundPasta(cv::Mat &dish, cv::Mat &final, std::vector<std::string> label,
-                std::vector<int> forbidden, int max_key, std::vector<BoundingBox> &boundingBoxes)
-{
-    bool allowed = true;
-    cv::Rect box;
-    for (int i = 0; i < forbidden.size(); i++)
-    {
-        if (forbidden[i] == max_key)
-        {
-            allowed = false;
-            break;
-        }
-    }
-    if (allowed)
-    {
+    // Compute non-zero pixels within the enlarged box
+    cv::Mat roi = t(enlargedBox);
+    // showImg("roi", t);
+    cv::cvtColor(roi, roi, cv::COLOR_BGR2GRAY);
+    int nonZeroArea = cv::countNonZero(roi);
 
-        box = computeBox(final, dish);
-        BoundingBox bb;
-        bb.box = box;
-        for (std::string lab : label)
-        {
-            bb.labels.push_back(lab);
-        }
-        boundingBoxes.push_back(bb);
-    }
-    return;
-}
-
-void boundSalad(cv::Mat &input, std::vector<cv::Vec3f> accepted_circles,
-                cv::Mat &final, std::vector<BoundingBox> &boundingBoxes)
-{
-    cv::Mat inClone;
-    cv::Mat grayDish;
-
-    int minRadius = 10000;
-    for (cv::Vec3f &c : accepted_circles)
-    {
-        if (c[2] < minRadius)
-        {
-            inClone = 0;
-            minRadius = c[2];
-            cv::Mat mask = cv::Mat::zeros(input.size(), CV_8UC1);
-            cv::Point center = cv::Point(c[0], c[1]);
-            int radius = c[2];
-            cv::circle(mask, center, radius, 255, -1);
-            input.copyTo(inClone, mask);
-        }
-    }
-
-    cv::Mat inHSV;
-    cv::cvtColor(inClone, inHSV, cv::COLOR_BGR2HSV);
-
-    Mat mask;
-    cv::inRange(inHSV, Scalar(0, 200, 200), Scalar(20, 255, 255), mask);
-    for (int i = 0; i < mask.rows; i++)
-        for (int j = 0; j < mask.cols; j++)
-            mask.at<uchar>(i, j) = 255 - mask.at<uchar>(i, j);
-
-    inHSV.setTo(Scalar(0, 0, 0), mask);
-
-    cv::Mat t;
-    cv::cvtColor(inHSV, t, COLOR_HSV2BGR);
-    cv::Rect box = computeBox(final, t);
-
-    BoundingBox bb;
-    bb.box = box;
-    bb.labels.push_back("salad");
-    boundingBoxes.push_back(bb);
-}
-
-void drawBoundingBoxes(cv::Mat &final, std::vector<BoundingBox> &boundingBoxes)
-{
-    for (BoundingBox &bb : boundingBoxes)
-    {
-        std::string text;
-        int numberFoods = bb.labels.size();
-        for (std::string label : bb.labels)
-        {
-            text = text + std::to_string(100 / numberFoods) + "% " + label + " ";
-        }
-        if (bb.box.y - 20 > 0)
-        {
-            cv::putText(final, text, cv::Point(bb.box.x, bb.box.y - 20), cv::FONT_HERSHEY_COMPLEX, 0.5, cv::Scalar(0, 0, 255), 0.8, 8, false);
-        }
-        else
-        {
-            cv::putText(final, text, cv::Point(bb.box.x, bb.box.y + bb.box.height + 20), cv::FONT_HERSHEY_COMPLEX, 0.5, cv::Scalar(0, 0, 255), 0.8, 8, false);
-        }
-        cv::rectangle(final, bb.box, CV_RGB(255, 0, 0), 2);
-    }
+    return nonZeroArea;
 }
 
 void equalizeHistogram(cv::Mat &src, cv::Mat &dst)

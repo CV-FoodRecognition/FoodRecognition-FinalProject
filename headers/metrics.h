@@ -9,9 +9,9 @@
     float x1, y1, x2, y2;  //Coordinate del rect
 };*/
 
-float get_iou(const BoundingBox &ground_truth, const BoundingBox &pred);
+float get_iou(const FoodData &ground_truth, const FoodData &pred);
 
-float get_meaniou(std::vector<BoundingBox> &groundTruth, std::vector<BoundingBox> &predictions);
+float get_meaniou(std::vector<FoodData> &groundTruth, std::vector<FoodData> &predictions);
 
 double calculatePixelRatio(int pixelsAfterimg, int pixelsBeforeimg);
 

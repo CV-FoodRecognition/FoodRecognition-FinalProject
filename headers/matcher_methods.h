@@ -10,7 +10,7 @@
 void bruteForceHammingSorted(cv::Mat img1, cv::Mat img2, Result res);
 int bruteForceKNN(cv::Mat img1, cv::Mat img2, Result res);
 void bruteForceKNN(cv::Mat img1, foodTemplate food, cv::Mat dish,
-                   cv::Mat &final, std::vector<BoundingBox> &boundingBoxes);
+                   cv::Mat &final, std::vector<FoodData> &boundingBoxes);
 void checkType(cv::Mat &img1, cv::Mat &img2, Result &res);
 void computeMinMaxCoordinates(cv::Mat &final, std::vector<cv::DMatch> &goodMatches, Result &res);
 

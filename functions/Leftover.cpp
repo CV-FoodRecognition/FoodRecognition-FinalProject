@@ -104,7 +104,7 @@ void Leftover::matchLeftovers(std::vector<cv::Mat> &removedDishes, const std::ve
     originalDishes = removedDishes;
     leftoverDishes = removedLeftovers;
 
-    breadFinder(leftover);
+    // breadFinder(leftover);
 
     /*
         For every circle in removedDishes (original dishes):
@@ -177,7 +177,7 @@ void Leftover::matchLeftovers(std::vector<cv::Mat> &removedDishes, const std::ve
     std::cout << "pairAvgColors: " << pairAvgColors.size() << std::endl;
 
     // COUPLE by SEGMENT COLORS
-    bool flag = true;
+    bool flag = false;
     pairCieAvgs = coupleCIELABColors(removedDishes, removedLeftovers, flag);
     std::cout << "pairAvgCIELAB: " << pairCieAvgs.size() << std::endl;
 
@@ -348,13 +348,11 @@ void Leftover::moreOriginalLessLeftovers(int type, std::vector<Couple> &finalPai
 
 // ------------------------------------------------------------------------------------------------------ //
 /*
-    Computes Original and Leftover with similar yellow area (computing kmeans with 2 segments -
-    where one is the background, black, one is the food in the dish, fixed to yellow)
-    @returns: vector of Couple of Original,Leftover images with similar areas in the dish
-
-    This metric is not very accurate because sometimes there might be no food left in the dish,
-    so the area will differ a lot.
-    But it can be used for leftover level 1, where the area stays similar.
+    Computes Original and Leftover with similar CIELAB colors.
+    Distance can be computed with DeltaE method or with norm method as for the RGB average method.
+    @returns: vector of Couple of Original,Leftover images with similar ranges in CIELAB space.
+    Flag = 0 --> DeltaE
+    Flag = 1 --> Norm
 */
 std::vector<Couple> Leftover::coupleCIELABColors(const std::vector<cv::Mat> &originals, const std::vector<cv::Mat> &leftovers, bool flag)
 {
@@ -567,7 +565,7 @@ std::vector<Couple> Leftover::coupleMinAverageColor(const std::vector<cv::Mat> &
     @param: boxes
     @result: results
 */
-void Leftover::assignBoundingBoxes(std::vector<BoundingBox> &boxes, std::vector<BoundingBox> &results,
+void Leftover::assignBoundingBoxes(std::vector<FoodData> &boxes, std::vector<FoodData> &results,
                                    std::vector<cv::Mat> &leftovers)
 {
 }
@@ -575,8 +573,8 @@ void Leftover::assignBoundingBoxes(std::vector<BoundingBox> &boxes, std::vector<
 void Leftover::breadFinder(cv::Mat &leftover)
 {
     cv::Mat final = leftover.clone(); // Final image - Result
-    std::vector<BoundingBox> bboxes;  // Bounding Boxes
-    boundBread(leftover, leftoverDishes, final, bboxes);
+    std::vector<FoodData> bboxes;     // Bounding Boxes
+    int area = boundBreadLeftover(leftover, leftoverDishes, final, bboxes);
     std::cout << "final size: " << final.size() << std::endl;
     drawBoundingBoxes(final, bboxes);
     showImg("pane", final);
@@ -611,7 +609,7 @@ void printVector(const std::vector<Couple> &pairs, const std::string &title)
     int i = 0;
     for (const auto &pair : pairs)
     {
-        std::cout << "i: " << i << "; ";
+        // std::cout << "i: " << i << "; ";
         i++;
         concatShowImg(title, pair.original, pair.leftover);
     }

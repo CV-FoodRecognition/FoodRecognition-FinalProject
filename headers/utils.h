@@ -19,11 +19,13 @@ enum SharpnessType
     HIGHPASS
 };
 
-struct BoundingBox
+struct FoodData
 {
     cv::Rect box;
     std::vector<std::string> labels;
     std::vector<int> ids;
+    cv::Mat area;
+    int nonZeroArea;
 };
 
 struct foodTemplate
@@ -92,7 +94,6 @@ cv::Mat convertBGRtoCIELAB(const cv::Mat &bgrImage);
 std::vector<cv::Mat> convertBGRtoCIELAB(const std::vector<cv::Mat> &bgrImages);
 void removeDish(cv::Mat &shifted);
 double computeArea(cv::Rect box);
-cv::Rect computeBox(cv::Mat &final, cv::Mat &dish);
 double computeCircleArea(double radius);
 void computeSegmentArea(SegmentAreas &sa);
 void acceptCircles(cv::Mat &in, cv::Mat &mask, cv::Mat &temp,

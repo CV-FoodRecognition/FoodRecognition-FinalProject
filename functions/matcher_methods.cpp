@@ -22,9 +22,9 @@ void bruteForceHammingSorted(cv::Mat img1, cv::Mat img2, Result res)
     showImg(file, imgMatches);
 }
 
-void bruteForceKNN(cv::Mat img1, foodTemplate food, cv::Mat dish, cv::Mat &final, std::vector<BoundingBox> &boundingBoxes)
+void bruteForceKNN(cv::Mat img1, foodTemplate food, cv::Mat dish, cv::Mat &final, std::vector<FoodData> &boundingBoxes)
 {
-    std::cout << "nuovo cibo" << std::endl;
+    // std::cout << "nuovo cibo" << std::endl;
     img1.convertTo(img1, CV_8U);
 
     int x = final.cols;
@@ -36,7 +36,7 @@ void bruteForceKNN(cv::Mat img1, foodTemplate food, cv::Mat dish, cv::Mat &final
     std::vector<std::vector<cv::DMatch>> matches;
     for (int t = 0; t < food.foodTemplates.size(); t++)
     {
-        std::cout << "nuovo template" << std::endl;
+        // std::cout << "nuovo template" << std::endl;
         cv::Mat img2 = food.foodTemplates[t];
         img2.convertTo(img2, CV_8U);
 
@@ -84,9 +84,11 @@ void bruteForceKNN(cv::Mat img1, foodTemplate food, cv::Mat dish, cv::Mat &final
         }
     }
 
-    BoundingBox bb;
+    FoodData bb;
     bb.box = cv::Rect(x, y, max_x - x, max_y - y);
+
     bb.labels.push_back(food.label);
+    bb.ids.push_back(food.id);
     boundingBoxes.push_back(bb);
 
     return;
@@ -142,8 +144,8 @@ void computeMinMaxCoordinates(cv::Mat &final, std::vector<cv::DMatch> &goodMatch
         int id = goodMatches[i].queryIdx;
         float kp_x = res.kp1[id].pt.x;
         float kp_y = res.kp1[id].pt.y;
-        std::cout << "kp_x:  " << kp_x << std::endl;
-        std::cout << "kp_y:  " << kp_y << std::endl;
+        // std::cout << "kp_x:  " << kp_x << std::endl;
+        // std::cout << "kp_y:  " << kp_y << std::endl;
 
         if (kp_x < x)
             x = cvRound(kp_x);
@@ -157,10 +159,10 @@ void computeMinMaxCoordinates(cv::Mat &final, std::vector<cv::DMatch> &goodMatch
         if (kp_y > max_y)
             max_y = cvRound(kp_y);
 
-        std::cout << "x:  " << x << std::endl;
-        std::cout << "y:  " << y << std::endl;
-        std::cout << "max_x:  " << max_x << std::endl;
-        std::cout << "max_y:  " << max_y << std::endl;
+        // std::cout << "x:  " << x << std::endl;
+        // std::cout << "y:  " << y << std::endl;
+        // std::cout << "max_x:  " << max_x << std::endl;
+        // std::cout << "max_y:  " << max_y << std::endl;
     }
 
     cv::Rect boundingBox(x, y, max_x - x, max_y - y);

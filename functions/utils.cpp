@@ -113,42 +113,6 @@ std::vector<cv::Mat> convertBGRtoCIELAB(const std::vector<cv::Mat> &bgrImages)
     return cielabImages;
 }
 
-cv::Rect computeBox(cv::Mat &final, cv::Mat &dish)
-{
-    int x = final.cols;
-    int y = final.rows;
-    int max_x = 0;
-    int max_y = 0;
-    for (int i = 0; i < dish.cols; i++)
-    {
-        for (int j = 0; j < dish.rows; j++)
-        {
-            if (dish.at<cv::Vec3b>(cv::Point(i, j))[0] != 0 &&
-                dish.at<cv::Vec3b>(cv::Point(i, j))[1] != 0 &&
-                dish.at<cv::Vec3b>(cv::Point(i, j))[2] != 0)
-            {
-                if (i < x)
-                {
-                    x = i;
-                }
-                if (i > max_x)
-                {
-                    max_x = i;
-                }
-                if (j < y)
-                {
-                    y = j;
-                }
-                if (j > max_y)
-                {
-                    max_y = j;
-                }
-            }
-        }
-    }
-    return cv::Rect(x, y, max_x - x, max_y - y);
-}
-
 std::string enumToString(FoodType label)
 {
     switch (label)
@@ -196,13 +160,9 @@ void removeDish(cv::Mat &src)
     for (int k = 255; k > 20; k = k - 5)
     {
         cv::Mat mask;
-        cv::inRange(src, cv::Scalar(k - 30, k - 30, k - 30), cv::Scalar(k, k, k), mask);
+        cv::inRange(src, cv::Scalar(k - 40, k - 40, k - 40), cv::Scalar(k, k, k), mask);
         src.setTo(cv::Scalar(0, 0, 0), mask);
     }
-}
-
-void removeDishWithGrabCut(cv::Mat &src)
-{
 }
 
 void acceptCircles(cv::Mat &in, cv::Mat &mask, cv::Mat &temp,

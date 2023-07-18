@@ -10,6 +10,7 @@
 #include "matcher_methods.h"
 #include "utils.h"
 #include "ImageProcessor.h"
+#include "detect_recognition.h"
 
 class Leftover
 {
@@ -70,7 +71,7 @@ private:
     // measurement methods for abnormal condition leftovers: 2:1, 3:1, 3:2 leftover-original
     void moreOriginalLessLeftovers(int type, std::vector<Couple> &finalPairs, std::vector<cv::Mat> &alreadyAssigned);
     // assign bounding boxes to every food
-    void assignBoundingBoxes(std::vector<BoundingBox> &boxes, std::vector<BoundingBox> &results, std::vector<cv::Mat> &leftovers);
+    void assignBoundingBoxes(std::vector<FoodData> &boxes, std::vector<FoodData> &results, std::vector<cv::Mat> &leftovers);
 };
 
 // ---------------------------------------------------------------------------------------------------- //

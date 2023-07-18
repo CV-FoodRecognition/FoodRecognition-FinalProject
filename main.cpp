@@ -3,10 +3,10 @@
 #include "headers/matcher_methods.h"
 #include "headers/segmentation.h"
 #include "headers/utils.h"
-#include "headers/ImagePreprocessor.hpp"
 #include "headers/ImageProcessor.h"
 #include "headers/Leftover.h"
 #include "headers/metrics.h"
+#include "headers/detect_recognition.h"
 
 using namespace cv;
 using namespace std;
@@ -56,14 +56,14 @@ int main(int argc, char **argv)
     addFood(0, "", "pasta with tomato sauce", 2, "../images/Train/", templates);
     addFood(0, "", "pasta with meat sauce", 3, "../images/Train/", templates);
     addFood(0, "", "pasta with clams and mussels", 4, "../images/Train/", templates); // problems
-    addFood(2, "rice", "pilaw rice", 5, "../images/Train/", templates);
+    addFood(4, "rice", "pilaw rice", 5, "../images/Train/", templates);
     addFood(3, "pork", "grilled pork cutlet", 6, "../images/Train/", templates);
     addFood(2, "fishcutlet", "fish cutlet", 7, "../images/Train/", templates);
     addFood(2, "rabbit", "rabbit", 8, "../images/Train/", templates);
     addFood(2, "seafoodsalad", "seafood salad", 9, "../images/Train/", templates); // problems
     addFood(2, "beans", "beans", 10, "../images/Train/", templates);
     addFood(0, "bread", "bread", 13, "../images/Train/", templates);
-    addFood(2, "potatoes", "basil potatoes", 11, "../images/Train/", templates);
+    addFood(0, "potatoes", "basil potatoes", 11, "../images/Train/", templates);
     addFood(0, "salad", "salad", 12, "../images/Train/", templates); // problems
 
     // Hough Transform
@@ -80,15 +80,7 @@ int main(int argc, char **argv)
     std::vector<cv::Mat> &leftovers = imgProcLeftovers.getDishes();
     std::vector<int> &radia2 = imgProcLeftovers.getRadius();
 
-    /*
-        1st method:
-        Detect and Recognize Objects
-    */
-    // showImg("0", templates[0]);
-    // showImg("1", templates[1]);
-
     cv::Mat final = in1.clone();
-    cv::Mat resMSER;
     std::vector<cv::Mat> removedDishes;
     for (int d = 0; d < dishes.size(); d++)
     {
@@ -132,8 +124,9 @@ int main(int argc, char **argv)
         imwrite("../images/Results/kmeansResult" + to_string(d) + ".jpg", r); */
     }
 
-    // detectAndRecognize(dishes, templates, dishesMatches, in1, final, result, acceptedCircles);
-    // showImg("FINALE", final);
+    std::vector<FoodData> foodData;
+    detectAndCompute(in1, dishes, dishesMatches, acceptedCircles, foodData, templates, final);
+    showImg("Detect and Recognize", final);
 
     cout << "XX" << endl;
 
@@ -165,104 +158,4 @@ int main(int argc, char **argv)
     } */
 
     return 0;
-}
-
-void detectAndRecognize(std::vector<cv::Mat> &dishes, std::vector<foodTemplate> &templates,
-                        std::vector<int> &dishesMatches, cv::Mat &in1, cv::Mat &final, Result &result,
-                        std::vector<cv::Vec3f> &accepted_circles)
-{
-    std::vector<int> forbidden;
-    bool alreadyFoundFirstDish = false;
-    std::vector<BoundingBox> boundingBoxes;
-
-    for (int f = 0; f < templates.size(); f++)
-    { // for every food
-
-        for (int d = 0; d < dishes.size(); d++)
-            dishesMatches[d] = 0;
-
-        cout << "inizio a cercare match" << endl;
-
-        for (int t = 0; t < templates[f].foodTemplates.size(); t++)
-        { // for every food template
-            cout << "t: " << t << endl;
-
-            for (int d = 0; d < dishes.size(); d++)
-            { // look for matches in every dish
-                cout << "entro qui" << endl;
-                cout << "d: " << d << endl;
-                result = useDescriptor(dishes[d], templates[f].foodTemplates[t], DescriptorType::SIFT);
-                dishesMatches[d] = dishesMatches[d] + bruteForceKNN(dishes[d], templates[f].foodTemplates[t], result);
-                std::cout << "matches dishes " << d << " : " << dishesMatches[d] << std::endl;
-            }
-        }
-        cout << "finito di cercare i match" << endl;
-
-        int max_key = 0;
-        Scalar avgColor;
-        if (templates[f].id != 13)
-        {
-            max_key = computeBestDish(templates[f], dishes, dishesMatches);
-            cout << "max key: " << max_key << "avg color prima" << endl;
-
-            if (max_key > -1)
-            {
-                avgColor = computeAvgColorHSV(dishes[max_key]);
-            }
-        }
-
-        cout << "trovato il piatto con più match" << endl;
-
-        if (max_key > -1)
-        {
-            if (templates[f].id == 1 && avgColor[0] > 30 && avgColor[0] < 50 && !alreadyFoundFirstDish)
-            {
-                // pesto
-                boundPasta(dishes[max_key], final, templates[f].label, forbidden, max_key, boundingBoxes);
-                forbidden.push_back(max_key);
-                alreadyFoundFirstDish = true;
-            }
-            else if ((templates[f].id == 2 || templates[f].id == 3) && avgColor[0] > 0 && avgColor[0] < 11 && !alreadyFoundFirstDish)
-            { // tomato
-                std::vector<std::string> labels;
-                labels.push_back("pasta with tomato sauce");
-                labels.push_back("pasta with meat sauce");
-                boundPasta(dishes[max_key], final, labels, forbidden, max_key, boundingBoxes);
-                forbidden.push_back(max_key);
-                alreadyFoundFirstDish = true;
-            }
-            else if (templates[f].id == 4 && avgColor[0] > 10 && avgColor[0] < 20 && !alreadyFoundFirstDish)
-            { // clums and mussels
-                boundPasta(dishes[max_key], final, templates[f].label, forbidden, max_key, boundingBoxes);
-                forbidden.push_back(max_key);
-                alreadyFoundFirstDish = true;
-            }
-            else if (templates[f].id == 12)
-            { // salad
-                boundSalad(in1, accepted_circles, final, boundingBoxes);
-            }
-            else if (templates[f].id == 13)
-            { // bread
-                boundBread(in1, dishes, final, boundingBoxes);
-            }
-            else if (templates[f].id > 4)
-            {
-                bool allowed = true;
-                for (int i = 0; i < forbidden.size(); i++)
-                {
-                    if (forbidden[i] == max_key)
-                    {
-                        allowed = false;
-                        break;
-                    }
-                }
-                if (allowed)
-                {
-                    bruteForceKNN(in1, templates[f], dishes[max_key], final, boundingBoxes);
-                }
-            }
-        }
-    }
-    drawBoundingBoxes(final, boundingBoxes);
-    return;
 }

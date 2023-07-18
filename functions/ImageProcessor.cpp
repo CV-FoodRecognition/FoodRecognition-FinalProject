@@ -10,19 +10,19 @@ void ImageProcessor::doHough(cv::Mat &in)
     temp = in.clone();
 
     // Hough Circles per ottenere solo i piatti
-    std::vector<cv::Vec3f> circles;
+    /*std::vector<cv::Vec3f> circles;
     cv::HoughCircles(in_gray, circles, cv::HOUGH_GRADIENT,
                      1, in_gray.rows / 2.5, 140, 55,
                      185, 370); // min radius and max radius
+*/
 
-    /*
-        cv::GaussianBlur(in_gray, in_gray, cv::Size(7, 7), 1.5, 1.5, 4);
-        // Hough Circles per ottenere solo i piatti
-        std::vector<cv::Vec3f> circles;
-        cv::HoughCircles(in_gray, circles, cv::HOUGH_GRADIENT,
-                         1, 1, 100, 85,
-                         150, 500); // min radius and max radius
-    */
+    cv::GaussianBlur(in_gray, in_gray, cv::Size(7, 7), 1.5, 1.5, 4);
+    // Hough Circles per ottenere solo i piatti
+    std::vector<cv::Vec3f> circles;
+    cv::HoughCircles(in_gray, circles, cv::HOUGH_GRADIENT,
+                     1, 1, 100, 85,
+                     150, 500); // min radius and max radius
+
     std::vector<cv::Vec3f> accepted_circles;
     for (int k = 0; k < circles.size(); k++)
     {
