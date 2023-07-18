@@ -322,11 +322,8 @@ void Leftover::moreOriginalLessLeftovers(int type, std::vector<Couple> &finalPai
     }
     else if (type == 2)
     {
-
         std::sort(pairMatches.begin(), pairMatches.end(), [](const Couple &a, const Couple &b)
                   { return a.matches > b.matches; });
-
-        // FIRST 2 DISHES
         for (int i = 0; i < 2; i++)
         {
             Couple couple;
@@ -335,7 +332,6 @@ void Leftover::moreOriginalLessLeftovers(int type, std::vector<Couple> &finalPai
             couple.matches = pairMatches[i].matches;
             finalPairs.push_back(couple);
         }
-
         Couple emptyCouple;
         emptyCouple.leftover = cv::Mat::zeros(originalDishes[2].size(), originalDishes[2].type());
         std::string errMessage = "No matches found for this dish.";
@@ -357,6 +353,7 @@ void Leftover::moreOriginalLessLeftovers(int type, std::vector<Couple> &finalPai
 std::vector<Couple> Leftover::coupleCIELABColors(const std::vector<cv::Mat> &originals, const std::vector<cv::Mat> &leftovers, bool flag)
 {
     std::vector<Couple> result;
+    std::vector<bool> used(leftovers.size(), false);
     if (flag == 0)
     {
         for (int i = 0; i < avgCIELABOriginals.size(); i++)
@@ -366,14 +363,18 @@ std::vector<Couple> Leftover::coupleCIELABColors(const std::vector<cv::Mat> &ori
             int closestIndex = 0;
             for (int j = 0; j < avgCIELABLefts.size(); j++)
             {
-                const cv::Scalar &avgLeft = avgCIELABLefts[j];
-                double dist = computeDeltaE(avgOriginal, avgLeft);
-                if (dist < minDist)
+                if (!used[j])
                 {
-                    minDist = dist;
-                    closestIndex = j;
+                    const cv::Scalar &avgLeft = avgCIELABLefts[j];
+                    double dist = computeDeltaE(avgOriginal, avgLeft);
+                    if (dist < minDist)
+                    {
+                        minDist = dist;
+                        closestIndex = j;
+                    }
                 }
             }
+            used[closestIndex] = true;
             Couple couple;
             couple.original = originals[i];
             couple.leftover = leftovers[closestIndex];
@@ -390,14 +391,18 @@ std::vector<Couple> Leftover::coupleCIELABColors(const std::vector<cv::Mat> &ori
             int closestIndex = 0;
             for (int j = 0; j < avgCIELABLefts.size(); j++)
             {
-                const cv::Scalar &avgLeft = avgCIELABLefts[j];
-                double dist = cv::norm(avgOriginal - avgLeft, cv::NORM_L2);
-                if (dist < minDist)
+                if (!used[j])
                 {
-                    minDist = dist;
-                    closestIndex = j;
+                    const cv::Scalar &avgLeft = avgCIELABLefts[j];
+                    double dist = cv::norm(avgOriginal - avgLeft, cv::NORM_L2);
+                    if (dist < minDist)
+                    {
+                        minDist = dist;
+                        closestIndex = j;
+                    }
                 }
             }
+            used[closestIndex] = true;
             Couple couple;
             couple.original = originals[i];
             couple.leftover = leftovers[closestIndex];
@@ -500,6 +505,7 @@ std::vector<Couple> Leftover::coupleClosestElements(const std::vector<cv::Mat> &
                                                     const std::vector<cv::Mat> &leftovers)
 {
     std::vector<Couple> result;
+    std::vector<bool> used(leftovers.size(), false);
     for (int i = 0; i < circleAreasOriginal.size(); i++)
     {
         double original = circleAreasOriginal[i];
@@ -507,14 +513,18 @@ std::vector<Couple> Leftover::coupleClosestElements(const std::vector<cv::Mat> &
         int closestIndex = 0;
         for (int j = 0; j < circleAreasLeftover.size(); j++)
         {
-            double leftover = circleAreasLeftover[j];
-            double distance = std::abs(original - leftover);
-            if (distance < minDistance)
+            if (!used[j])
             {
-                minDistance = distance;
-                closestIndex = j;
+                double leftover = circleAreasLeftover[j];
+                double distance = std::abs(original - leftover);
+                if (distance < minDistance)
+                {
+                    minDistance = distance;
+                    closestIndex = j;
+                }
             }
         }
+        used[closestIndex] = true;
         Couple couple;
         couple.original = originals[i];
         couple.leftover = leftovers[closestIndex];
@@ -531,7 +541,7 @@ std::vector<Couple> Leftover::coupleMinAverageColor(const std::vector<cv::Mat> &
                                                     const std::vector<cv::Mat> &leftovers)
 {
     std::vector<Couple> result;
-
+    std::vector<bool> used(leftovers.size(), false);
     for (int i = 0; i < avgOriginals.size(); i++)
     {
         const cv::Scalar &avgOriginal = avgOriginals[i];
@@ -539,14 +549,18 @@ std::vector<Couple> Leftover::coupleMinAverageColor(const std::vector<cv::Mat> &
         int closestIndex = 0;
         for (int j = 0; j < avgLefts.size(); j++)
         {
-            const cv::Scalar &avgLeft = avgLefts[j];
-            double dist = cv::norm(avgOriginal - avgLeft);
-            if (dist < minDist)
+            if (!used[j])
             {
-                minDist = dist;
-                closestIndex = j;
+                const cv::Scalar &avgLeft = avgLefts[j];
+                double dist = cv::norm(avgOriginal - avgLeft);
+                if (dist < minDist)
+                {
+                    minDist = dist;
+                    closestIndex = j;
+                }
             }
         }
+        used[closestIndex] = true;
         Couple couple;
         couple.original = originals[i];
         couple.leftover = leftovers[closestIndex];
@@ -596,6 +610,16 @@ bool checkCouplesEqual(const Couple &a, const Couple &b)
     cv::cvtColor(b.leftover, bLeftoverGray, cv::COLOR_BGR2GRAY);
     // Actual check
     return cv::countNonZero(aOriginalGray != bOriginalGray) == 0 && cv::countNonZero(aLeftoverGray != bLeftoverGray) == 0;
+}
+
+bool checkImageEqual(const cv::Mat &a, const cv::Mat &b)
+{
+    cv::Mat aOriginalGray, bOriginalGray;
+
+    cv::cvtColor(a, aOriginalGray, cv::COLOR_BGR2GRAY);
+    cv::cvtColor(b, bOriginalGray, cv::COLOR_BGR2GRAY);
+
+    return cv::countNonZero(aOriginalGray != bOriginalGray) == 0;
 }
 
 void printVector(const std::vector<Couple> &pairs, const std::string &title)

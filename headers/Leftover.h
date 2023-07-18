@@ -79,6 +79,8 @@ private:
 
 // utils for Leftover -- checks if two couples are the same couple
 bool checkCouplesEqual(const Couple &a, const Couple &b);
+// utils for Leftover -- checks if two Mat objects are the same
+bool checkImageEqual(const cv::Mat &a, const cv::Mat &b);
 // utils for Leftover -- prints a vector of couples (which can be all passed pairs: by matches, avgcolor, cielab_avgcolor etc.)
 void printVector(const std::vector<Couple> &pairs, const std::string &title);
 // utils for Leftover -- delta E computation for CIELAB comparison

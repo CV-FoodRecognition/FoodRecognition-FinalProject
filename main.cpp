@@ -125,8 +125,8 @@ int main(int argc, char **argv)
     }
 
     std::vector<FoodData> foodData;
-    detectAndCompute(in1, dishes, dishesMatches, acceptedCircles, foodData, templates, final);
-    showImg("Detect and Recognize", final);
+    // detectAndCompute(in1, dishes, dishesMatches, acceptedCircles, foodData, templates, final);
+    // showImg("Detect and Recognize", final);
 
     cout << "XX" << endl;
 
