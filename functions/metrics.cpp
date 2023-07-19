@@ -26,7 +26,7 @@ void readTray(std::vector<Couple> &gtPairs, std::string subDir, int j)
 
     /*
         !! DISCLAIMER !!
-        !! Da rivedere le strutture usate... Servono dei FoodContainer non dei FoodData? !!
+        !! Da rivedere le strutture usate... Servono dei FoodContainer non dei FoodData !!
     */
     Couple c;
     c.leftoverBB = dataLeft;
@@ -89,6 +89,19 @@ std::vector<FoodData> parseGroundTruth(const std::string &filename)
     return groundTruth;
 }
 
+// Function that returns the Intersection over Union for all the ground truths and all the predictions
+std::vector<float> get_ious(const std::vector<FoodData> &ground_truths, const std::vector<FoodData> &preds)
+{
+    std::vector<float> ious;
+    for (int i = 0; i < ground_truths.size() && i < preds.size(); i++)
+    {
+        float iou = get_iou(ground_truths[i], preds[i]);
+        ious.push_back(iou);
+    }
+    return ious;
+}
+
+// For mAP 1
 // Function that returns the Intersection over Union parameter
 float get_iou(const FoodData &ground_truth, const FoodData &pred)
 {
@@ -115,6 +128,76 @@ float get_iou(const FoodData &ground_truth, const FoodData &pred)
     // RETURN IoU
     return area_of_intersection / area_of_union;
 }
+
+// For mAP 2
+std::vector<std::string> getConfusionVector(const std::vector<float> &ious)
+{
+    std::vector<std::string> confusionVector;
+    for (const auto &iou : ious)
+    {
+        if (iou == 0.0)
+            confusionVector.push_back("FN");
+        else if (iou <= IOUthresh)
+            confusionVector.push_back("FP");
+        else
+            confusionVector.push_back("TP");
+    }
+    return confusionVector;
+}
+
+// For mAP 3
+std::vector<int> getCumulativeTP(const std::vector<std::string> &matchStatuses)
+{
+    std::vector<int> cumulativeTP;
+    int cumTP = 0;
+    for (const auto &status : matchStatuses)
+    {
+        if (status == "TP")
+            cumTP += 1;
+        cumulativeTP.push_back(cumTP);
+    }
+    return cumulativeTP;
+}
+
+// For mAP 4
+std::vector<int> getCumulativeFP(const std::vector<std::string> &matchStatuses)
+{
+    std::vector<int> cumulativeFP;
+    int cumFP = 0;
+    for (const auto &status : matchStatuses)
+    {
+        if (status == "FP")
+            cumFP += 1;
+        cumulativeFP.push_back(cumFP);
+    }
+    return cumulativeFP;
+}
+
+// For mAP 5
+std::vector<float> getPrecision(const std::vector<int> &cumulativeTP, const std::vector<int> &cumulativeFP)
+{
+    std::vector<float> precision;
+    for (int i = 0; i < cumulativeTP.size() && i < cumulativeFP.size(); i++)
+    {
+        float prec = cumulativeTP[i] / float(cumulativeTP[i] + cumulativeFP[i]);
+        precision.push_back(prec);
+    }
+    return precision;
+}
+
+// For mAP 6
+std::vector<float> getRecall(const std::vector<int> &cumulativeTP, float gtTotal)
+{
+    std::vector<float> recall;
+    for (const auto &tp : cumulativeTP)
+    {
+        float rec = tp / gtTotal;
+        recall.push_back(rec);
+    }
+    return recall;
+}
+
+// -------------------------------------------------------------------------------------------------------- //
 
 // Function that returns the mean between all the ground truth bounding_boxes and the predicted one
 float get_meaniou(std::vector<FoodDataContainer> &groundTruth, std::vector<FoodDataContainer> &predictions)

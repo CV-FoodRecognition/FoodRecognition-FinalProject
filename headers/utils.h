@@ -11,6 +11,8 @@ Written by @nicolacalzone and @rickyvendra
 #include <cmath>
 #include "ImageProcessor.h"
 
+const float IOUthresh = 0.5;
+
 enum FoodType
 {
     Meat,
