@@ -1,5 +1,9 @@
 #include "../headers/segmentation.h"
 
+/*
+Written by @nicolacalzone and @rickyvendra
+*/
+
 using namespace cv;
 using namespace std;
 
@@ -120,26 +124,4 @@ void removeBackground(cv::Mat &src)
         inRange(src, Scalar(k - 40, k - 40, k - 40), Scalar(k, k, k), mask);
         src.setTo(Scalar(0, 0, 0), mask);
     }
-}
-
-void removeShadows(cv::Mat &src, cv::Mat &dst)
-{
-    // Converting image to LAB color space
-    cv::Mat lab;
-    cv::cvtColor(src, lab, cv::COLOR_BGR2Lab);
-
-    // Splitting the channels
-    std::vector<cv::Mat> labChannels(3);
-    cv::split(lab, labChannels);
-
-    // Apply Contrast Limited Adaptive Histogram Equalization
-    cv::Ptr<cv::CLAHE> clahe = cv::createCLAHE();
-    clahe->setClipLimit(1);
-    cv::Mat enhancedL;
-    clahe->apply(labChannels[0], enhancedL);
-
-    // Merge the channels back and convert back to BGR color space
-    enhancedL.copyTo(labChannels[0]);
-    cv::merge(labChannels, lab);
-    cv::cvtColor(lab, dst, cv::COLOR_Lab2BGR);
 }

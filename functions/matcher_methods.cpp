@@ -3,24 +3,9 @@
 
 const std::string dir = "../ResultImages/";
 
-void bruteForceHammingSorted(cv::Mat img1, cv::Mat img2, Result res)
-{
-    checkType(img1, img2, res);
-
-    // Brute Force Hamming Match
-    cv::BFMatcher bf(cv::NORM_HAMMING, true);
-    std::vector<cv::DMatch> matches;
-    bf.match(res.descriptor1, res.descriptor2, matches);
-
-    // Sorting best Matches
-    std::sort(matches.begin(), matches.end());
-
-    // Drawing best Matches
-    cv::Mat imgMatches;
-    cv::drawMatches(img1, res.kp1, img2, res.kp2, matches, imgMatches);
-    std::string file = "Hamming - ORB Sorted.png";
-    showImg(file, imgMatches);
-}
+/*
+Written by @nicolacalzone and @rickyvendra
+*/
 
 void bruteForceKNN(cv::Mat img1, foodTemplate food, cv::Mat dish, cv::Mat &final, std::vector<FoodData> &boundingBoxes)
 {
@@ -86,7 +71,7 @@ void bruteForceKNN(cv::Mat img1, foodTemplate food, cv::Mat dish, cv::Mat &final
 
     FoodData bb;
     bb.box = cv::Rect(x, y, max_x - x, max_y - y);
-
+    bb.src = dish;
     bb.labels.push_back(food.label);
     bb.ids.push_back(food.id);
     boundingBoxes.push_back(bb);
@@ -144,8 +129,6 @@ void computeMinMaxCoordinates(cv::Mat &final, std::vector<cv::DMatch> &goodMatch
         int id = goodMatches[i].queryIdx;
         float kp_x = res.kp1[id].pt.x;
         float kp_y = res.kp1[id].pt.y;
-        // std::cout << "kp_x:  " << kp_x << std::endl;
-        // std::cout << "kp_y:  " << kp_y << std::endl;
 
         if (kp_x < x)
             x = cvRound(kp_x);
@@ -158,13 +141,29 @@ void computeMinMaxCoordinates(cv::Mat &final, std::vector<cv::DMatch> &goodMatch
 
         if (kp_y > max_y)
             max_y = cvRound(kp_y);
-
-        // std::cout << "x:  " << x << std::endl;
-        // std::cout << "y:  " << y << std::endl;
-        // std::cout << "max_x:  " << max_x << std::endl;
-        // std::cout << "max_y:  " << max_y << std::endl;
     }
 
     cv::Rect boundingBox(x, y, max_x - x, max_y - y);
     cv::rectangle(final, boundingBox, CV_RGB(0, 255, 0));
+}
+
+// USED FOR ORB
+// ABANDONED
+void bruteForceHammingSorted(cv::Mat img1, cv::Mat img2, Result res)
+{
+    checkType(img1, img2, res);
+
+    // Brute Force Hamming Match
+    cv::BFMatcher bf(cv::NORM_HAMMING, true);
+    std::vector<cv::DMatch> matches;
+    bf.match(res.descriptor1, res.descriptor2, matches);
+
+    // Sorting best Matches
+    std::sort(matches.begin(), matches.end());
+
+    // Drawing best Matches
+    cv::Mat imgMatches;
+    cv::drawMatches(img1, res.kp1, img2, res.kp2, matches, imgMatches);
+    std::string file = "Hamming - ORB Sorted.png";
+    showImg(file, imgMatches);
 }

@@ -3,23 +3,20 @@
 
 #include <iostream>
 #include <vector>
-
-/* struct BoundingBox {
-    int id;  //ID del cibo
-    float x1, y1, x2, y2;  //Coordinate del rect
-};*/
+#include <fstream>
+#include <sstream>
+#include <algorithm>
+#include <set>
+#include "utils.h"
 
 float get_iou(const FoodData &ground_truth, const FoodData &pred);
 
 float get_meaniou(std::vector<FoodData> &groundTruth, std::vector<FoodData> &predictions);
 
-double calculatePixelRatio(int pixelsAfterimg, int pixelsBeforeimg);
+std::set<cv::Point> getUnionSegments(cv::Mat &S1, cv::Mat &S2);
 
-/*double calculateAveragePrecision(const std::vector<double> &results,
-                                 const std::vector<double> &relevantDocs,
-                                 double iouThreshold);
-void calculateMetrics(const std::vector<std::vector<double>> &allResults,
-                      const std::vector<std::vector<double>> &allRelevantDocs,
-                      double iouThreshold, double &map, double &meanIoU);*/
+std::set<cv::Point> getIntersectionSegments(cv::Mat &S1, cv::Mat &S2);
+
+float calculatePixelRatio(int pixelsAfterimg, int pixelsBeforeimg);
 
 #endif // METRICS_H

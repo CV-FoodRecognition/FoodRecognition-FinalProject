@@ -3,8 +3,13 @@
 using namespace cv;
 using namespace std;
 
+/*
+Class written by @rickyvendra
+*/
+
 void detectAndCompute(cv::Mat in1, std::vector<cv::Mat> dishes, std::vector<int> dishesMatches,
-                      std::vector<cv::Vec3f> accepted_circles, std::vector<FoodData> &foodData, std::vector<foodTemplate> templates, cv::Mat &final)
+                      std::vector<cv::Vec3f> accepted_circles, std::vector<FoodData> &foodData, std::vector<foodTemplate> templates,
+                      cv::Mat &final)
 {
     Result result;
     std::vector<int> forbidden;
@@ -202,6 +207,7 @@ void boundPasta(Mat &dish, Mat &final, std::vector<std::string> labels, std::vec
 
         box = computeBox(final, dish);
         FoodData bb;
+        bb.src = dish;
         bb.box = box;
         for (std::string label : labels)
         {
@@ -254,6 +260,7 @@ void boundBread(cv::Mat &input, std::vector<cv::Mat> &dishes,
     // waitKey();
     FoodData bb;
     bb.box = box;
+    bb.src = input;
     bb.labels.push_back("bread");
     bb.ids.push_back(13);
     foodData.push_back(bb);
@@ -302,6 +309,7 @@ void boundSalad(cv::Mat &input, std::vector<cv::Vec3f> accepted_circles,
     cv::Rect box = computeBox(final, t);
 
     FoodData bb;
+    bb.src = input;
     bb.box = box;
     bb.labels.push_back("salad");
     bb.ids.push_back(12);
@@ -344,6 +352,7 @@ void boundPotatoes(cv::Mat &dish, cv::Mat &final, std::vector<FoodData> &foodDat
         cv::Rect box = computeBox(final, t);
 
         FoodData bb;
+        bb.src = dish;
         bb.box = box;
         bb.labels.push_back("potatoes");
         bb.ids.push_back(11);

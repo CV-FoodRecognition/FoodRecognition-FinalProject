@@ -1,6 +1,10 @@
 #ifndef MATCHER_METHODS_H
 #define MATCHER_METHODS_H
 
+/*
+Written by @nicolacalzone and @rickyvendra
+*/
+
 #include <opencv2/core.hpp>
 #include <array>
 #include <iostream>

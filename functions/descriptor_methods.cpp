@@ -1,6 +1,10 @@
 #include "../headers/descriptor_methods.h"
 
-// Descriptor creation using Factory Pattern
+/*
+Written by @nicolacalzone
+*/
+
+// Descriptor creation using a "sort of" Factory design pattern
 cv::Ptr<cv::Feature2D> createDescriptor(DescriptorType typ)
 {
     switch (typ)
@@ -8,9 +12,8 @@ cv::Ptr<cv::Feature2D> createDescriptor(DescriptorType typ)
     case SURF:
         return cv::xfeatures2d::SURF::create();
     case SIFT:
+    default:
         return cv::SIFT::create();
-    case ORB:
-        return cv::ORB::create();
     }
 }
 

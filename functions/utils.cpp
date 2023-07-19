@@ -1,34 +1,32 @@
 #include "../headers/utils.h"
 
+/*
+    Written by @nicolacalzone
+*/
 bool isInsideCircle(cv::Vec3i circle, int x, int y)
 {
     double res = sqrt(pow(circle[0] - x, 2) + pow(circle[1] - y, 2));
     return res > circle[2]; // > radius
 }
-
 void showImg(std::string title, cv::Mat image)
 {
     cv::namedWindow(title, cv::WINDOW_NORMAL);
     cv::imshow(title, image);
     cv::waitKey(0);
 }
-
 void concatShowImg(std::string title, cv::Mat original, cv::Mat leftover)
 {
     if (original.channels() != leftover.channels())
     {
         std::cerr << "Warning: Input matrices have different numbers of channels. Adjusting them to the same number of channels." << std::endl;
 
-        int maxChannels = std::max(original.channels(), leftover.channels());
-
-        if (original.channels() < maxChannels)
+        if (original.channels() < leftover.channels())
         {
             cv::cvtColor(original, original, cv::COLOR_GRAY2BGR); // Convert original to 3 channels (BGR) if it has only 1 channel
         }
-        if (leftover.channels() < maxChannels)
+        if (leftover.channels() < original.channels())
         {
-            cv::Mat temp;
-            cv::cvtColor(leftover, leftover, cv::COLOR_GRAY2BGR); // Convert leftover to 3 channels (BGR) if it has only 1 channel        }
+            cv::cvtColor(leftover, leftover, cv::COLOR_GRAY2BGR); // Convert leftover to 3 channels (BGR) if it has only 1 channel
         }
     }
     if (original.size() != leftover.size())
@@ -53,29 +51,6 @@ void concatShowImg(std::string title, cv::Mat original, cv::Mat leftover)
     cv::imshow(title, combined);
     cv::waitKey(0);
 }
-
-void addFood(int size, std::string fileName, std::string label, int id,
-             std::string path, std::vector<foodTemplate> &templates)
-{
-    cv::Mat temp_template;
-    foodTemplate myFood;
-    if (size > 0)
-    {
-        for (int i = 1; i <= size; i++)
-        {
-            std::string file = path + fileName + std::to_string(i) + ".jpg";
-            temp_template = cv::imread(file, cv::IMREAD_GRAYSCALE);
-            myFood.foodTemplates.push_back(temp_template);
-            // showImg("www", temp_template);
-        }
-    }
-
-    myFood.label = label;
-    myFood.id = id;
-    templates.push_back(myFood);
-    return;
-}
-
 cv::Mat convertBGRtoCIELAB(const cv::Mat &bgrImage)
 {
     if (bgrImage.channels() == 3 && bgrImage.type() == CV_8UC3)
@@ -90,7 +65,6 @@ cv::Mat convertBGRtoCIELAB(const cv::Mat &bgrImage)
         return cv::Mat();
     }
 }
-
 std::vector<cv::Mat> convertBGRtoCIELAB(const std::vector<cv::Mat> &bgrImages)
 {
     std::vector<cv::Mat> cielabImages;
@@ -112,7 +86,6 @@ std::vector<cv::Mat> convertBGRtoCIELAB(const std::vector<cv::Mat> &bgrImages)
 
     return cielabImages;
 }
-
 std::string enumToString(FoodType label)
 {
     switch (label)
@@ -125,17 +98,14 @@ std::string enumToString(FoodType label)
         return "UNKNOWN";
     }
 }
-
 double computeArea(cv::Rect box)
 {
     return box.width * box.height;
 }
-
 double computeCircleArea(double radius)
 {
     return 3.1417 * radius * radius;
 }
-
 /*
     Computes area of a KMeans Segment
 */
@@ -154,7 +124,80 @@ void computeSegmentArea(SegmentAreas &sa)
     sa.areaRed = countNonZero(maskRed);
     sa.areaBlack = countNonZero(maskBlack);
 }
+bool areSameImage(const cv::Mat &in1, const cv::Mat &in2)
+{
+    if (in1.size() != in2.size() || in1.type() != in2.type())
+        return false;
 
+    cv::Mat mask;
+    cv::bitwise_xor(in1, in2, mask);
+
+    return cv::countNonZero(mask) == 0;
+}
+/*
+    SharpnessType:
+    -   LAPLACIAN
+    -   HIGHPASS
+*/
+void sharpenImg(cv::Mat &src, SharpnessType t)
+{
+    if (t = SharpnessType::HIGHPASS)
+    {
+        cv::Mat blurred;
+        cv::GaussianBlur(src, blurred, cv::Size(7, 7), 3);
+
+        cv::Mat highPass = src - blurred;
+        src = src + highPass;
+    }
+    else if (t = SharpnessType::LAPLACIAN)
+    {
+        cv::Mat laplacian;
+        cv::Laplacian(src, laplacian, CV_16S);
+        cv::Mat laplacian8bit;
+        laplacian.convertTo(laplacian8bit, CV_8UC3);
+
+        src = src + laplacian8bit;
+    }
+}
+
+cv::Mat convertGray(cv::Mat &src)
+{
+    cv::Mat gray;
+    cv::cvtColor(src, gray, cv::COLOR_BGR2GRAY);
+    return gray;
+}
+
+/*
+    Written by @rickyvendra
+
+    size = number of templates
+    fileName = name of the images of the templates
+    label = string to label the food
+    id = id of the food
+    path = path before the filename
+    templates = all the foodtemplates to store
+*/
+void addFood(int size, std::string fileName, std::string label, int id,
+             std::string path, std::vector<foodTemplate> &templates)
+{
+    cv::Mat temp_template;
+    foodTemplate myFood;
+    if (size > 0)
+    {
+        for (int i = 1; i <= size; i++)
+        {
+            std::string file = path + fileName + std::to_string(i) + ".jpg";
+            temp_template = cv::imread(file, cv::IMREAD_GRAYSCALE);
+            myFood.foodTemplates.push_back(temp_template);
+            // showImg("www", temp_template);
+        }
+    }
+
+    myFood.label = label;
+    myFood.id = id;
+    templates.push_back(myFood);
+    return;
+}
 void removeDish(cv::Mat &src)
 {
     for (int k = 255; k > 20; k = k - 5)
@@ -164,7 +207,6 @@ void removeDish(cv::Mat &src)
         src.setTo(cv::Scalar(0, 0, 0), mask);
     }
 }
-
 void acceptCircles(cv::Mat &in, cv::Mat &mask, cv::Mat &temp,
                    cv::Vec3i &c, cv::Point &center, int radius,
                    std::vector<cv::Vec3f> &accepted_circles,
@@ -194,50 +236,4 @@ void acceptCircles(cv::Mat &in, cv::Mat &mask, cv::Mat &temp,
         cv::circle(temp, center, 1, cv::Scalar(255, 0, 0), 3, cv::LINE_AA);
         cv::circle(temp, center, radius, cv::Scalar(0, 255, 0), 3, cv::LINE_AA);
     }
-}
-
-bool areSameImage(const cv::Mat &in1, const cv::Mat &in2)
-{
-    if (in1.size() != in2.size() || in1.type() != in2.type())
-        return false;
-
-    cv::Mat mask;
-    cv::bitwise_xor(in1, in2, mask);
-
-    return cv::countNonZero(mask) == 0;
-}
-
-/*
-    SharpnessType:
-    -   LAPLACIAN
-    -   HIGHPASS
-*/
-void sharpenImg(cv::Mat &src, SharpnessType t)
-{
-    if (t = SharpnessType::HIGHPASS)
-    {
-        cv::Mat blurred;
-        cv::GaussianBlur(src, blurred, cv::Size(7, 7), 3);
-
-        cv::Mat highPass = src - blurred;
-        src = src + highPass;
-    }
-    else if (t = SharpnessType::LAPLACIAN)
-    {
-        cv::Mat laplacian;
-        cv::Laplacian(src, laplacian, CV_16S);
-        cv::Mat laplacian8bit;
-        laplacian.convertTo(laplacian8bit, CV_8UC3);
-
-        src = src + laplacian8bit;
-    }
-
-    // showImg("Sharpened", src);
-}
-
-cv::Mat convertGray(cv::Mat &src)
-{
-    cv::Mat gray;
-    cv::cvtColor(src, gray, cv::COLOR_BGR2GRAY);
-    return gray;
 }

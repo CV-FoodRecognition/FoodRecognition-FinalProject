@@ -1,6 +1,10 @@
 #ifndef SEGMENT_H
 #define SEGMENT_H
 
+/*
+Written by @nicolacalzone and @rickyvendra
+*/
+
 #include "utils.h"
 #include "detect_recognition.h"
 #include <opencv2/opencv.hpp>

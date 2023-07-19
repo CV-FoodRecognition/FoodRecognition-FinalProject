@@ -1,6 +1,10 @@
 #ifndef IMAGE_PROCESSOR_H
 #define IMAGE_PROCESSOR_H
 
+/*
+Class written by @nicolacalzone and @rickyvendra
+*/
+
 #include <vector>
 #include <opencv2/opencv.hpp>
 #include "utils.h"

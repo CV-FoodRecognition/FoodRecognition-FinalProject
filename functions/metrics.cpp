@@ -1,30 +1,54 @@
 #include "../headers/metrics.h"
-#include <fstream>
-#include <sstream>
-#include <algorithm>
 
 using namespace std;
 
-//BoundingBox formed by the rect coordinates taken by the "bounding_boxes" files
+void handlerFunction(const std::vector<Couple> &finalPairs, std::vector<Couple> &gtPairs)
+{
+    for (int i = 0; i < 8; i++)
+    {
+        std::string subDir = "Tray" + to_string(i + 1);
+        for (int j = 0; j < 3; j++)
+            readTray(gtPairs, subDir, j);
+    }
+}
 
-struct BoundingBox {
-    int id;  //ID del cibo
-    float x1, y1, x2, y2;  //Coordinate del rect
-};
+void readTray(std::vector<Couple> &gtPairs, std::string subDir, int j)
+{
+    std::string directory = "../masks/" + subDir;
+    std::string original = "food_image_mask.png";
+    std::string leftover = "leftover" + to_string(j) + ".png";
 
+    cv::Mat origImg = cv::imread(directory + original, CV_8UC1);
+    cv::Mat leftImg = cv::imread(directory + leftover, CV_8UC1);
 
-//Function that extract the ID and the coordinates
-std::vector<BoundingBox> parseGroundTruth(const std::string& filename) {
-    std::vector<BoundingBox> groundTruth;
+    std::vector<FoodData> dataOrig = parseGroundTruth("../bounding_boxes/" + subDir + "food_image_bounding_box.txt");
+    std::vector<FoodData> dataLeft = parseGroundTruth("../bounding_boxes/" + subDir + "leftover1_bounding_box.txt");
+
+    /*
+        !! DISCLAIMER !!
+        !! Da rivedere le strutture usate... Servono dei FoodContainer non dei FoodData? !!
+    */
+    Couple c;
+    c.leftoverBB = dataLeft;
+    c.originalBB = dataOrig;
+    gtPairs.push_back(c);
+}
+
+// Function that extract the ID and the coordinates
+std::vector<FoodData> parseGroundTruth(const std::string &filename)
+{
+    std::vector<FoodData> groundTruth;
 
     std::ifstream inputFile(filename);
-    if (!inputFile.is_open()) {
+    if (!inputFile.is_open())
+    {
         std::cout << "Failed to open file: " << filename << std::endl;
         return groundTruth;
     }
 
     std::string line;
-    while (std::getline(inputFile, line)) {
+    while (std::getline(inputFile, line))
+    {
         std::istringstream iss(line);
         std::string token;
 
@@ -39,21 +63,23 @@ std::vector<BoundingBox> parseGroundTruth(const std::string& filename) {
         std::istringstream coordStream(token);
         std::vector<float> coords;
         std::string coord;
-        while (std::getline(coordStream, coord, ',')) {
+        while (std::getline(coordStream, coord, ','))
+        {
             coords.push_back(std::stof(coord));
         }
 
-        if (coords.size() != 4) {
+        if (coords.size() != 4)
+        {
             std::cout << "Invalid coordinate format: " << token << std::endl;
             continue;
         }
 
-        BoundingBox bbox;
-        bbox.id = id;
-        bbox.x1 = coords[0];
-        bbox.y1 = coords[1];
-        bbox.x2 = coords[2];
-        bbox.y2 = coords[3];
+        FoodData bbox;
+        bbox.ids[0] = id;
+        bbox.box.x = coords[0];
+        bbox.box.y = coords[1];
+        bbox.box.width = coords[2];
+        bbox.box.height = coords[3];
 
         groundTruth.push_back(bbox);
     }
@@ -63,128 +89,185 @@ std::vector<BoundingBox> parseGroundTruth(const std::string& filename) {
     return groundTruth;
 }
 
+// Function that returns the Intersection over Union parameter
+float get_iou(const FoodData &ground_truth, const FoodData &pred)
+{
+    float ix1 = std::max(ground_truth.box.x, pred.box.x); // Coordinates of the area of intersection
+    float iy1 = std::max(ground_truth.box.y, pred.box.y);
+    float ix2 = std::min(ground_truth.box.width, pred.box.width);
+    float iy2 = std::min(ground_truth.box.height, pred.box.height);
 
-//Function that returns the Intersection over Union parameter
-float get_iou(const BoundingBox& ground_truth, const BoundingBox& pred) {
-    
-    // Coordinates of the area of intersection
-    float ix1 = std::max(ground_truth.x1, pred.x1);
-    float iy1 = std::max(ground_truth.y1, pred.y1);
-    float ix2 = std::min(ground_truth.x2, pred.x2);
-    float iy2 = std::min(ground_truth.y2, pred.y2);
-
-    // Intersection height and width
-    float i_height = std::max(iy2 - iy1 + 1, 0.0f);
+    float i_height = std::max(iy2 - iy1 + 1, 0.0f); // Intersection height and width
     float i_width = std::max(ix2 - ix1 + 1, 0.0f);
 
+    // INTERSECTION AREA
     float area_of_intersection = i_height * i_width;
 
-    // Ground Truth dimensions
-    float gt_height = ground_truth.y2 - ground_truth.y1 + 1;
-    float gt_width = ground_truth.x2 - ground_truth.x1 + 1;
+    float gt_height = ground_truth.box.height - ground_truth.box.y + 1; // Ground Truth dimensions
+    float gt_width = ground_truth.box.width - ground_truth.box.x + 1;
 
-    // Prediction dimensions
-    float pred_height = pred.y2 - pred.y1 + 1;
-    float pred_width = pred.x2 - pred.x1 + 1;
+    float pred_height = pred.box.height - pred.box.y + 1; // Prediction dimensions
+    float pred_width = pred.box.width - pred.box.x + 1;
 
+    // UNION AREA
     float area_of_union = gt_height * gt_width + pred_height * pred_width - area_of_intersection;
 
-    float iou = area_of_intersection / area_of_union;
-
-    return iou;
+    // RETURN IoU
+    return area_of_intersection / area_of_union;
 }
 
-
-//Function that returns the mean between all the ground truth bounding_boxes and the predicted one
-float get_meaniou(std::vector<BoundingBox>& groundTruth, std::vector<BoundingBox>& predictions)
+// Function that returns the mean between all the ground truth bounding_boxes and the predicted one
+float get_meaniou(std::vector<FoodDataContainer> &groundTruth, std::vector<FoodDataContainer> &predictions)
 {
-    float sumIOU = 0.0;
-    int numPairs = 0;
+    for (auto &gt : groundTruth)
+    {
+        for (auto &pred : predictions)
+        {
+            if (gt.ids[0] == pred.ids[0])
+            {
+                float intersectionSegments = getIntersectionSegments(gt.segmentArea, pred.segmentArea).size();
+                float unionSegments = getUnionSegments(gt.segmentArea, pred.segmentArea).size();
 
-    for (const auto& gt : groundTruth) {
-        for (const auto& pred : predictions) {
-            if (gt.id == pred.id) {
-                float iou = get_iou(gt, pred);
-                sumIOU += iou;
-                numPairs++;
+                if (intersectionSegments == 0 || unionSegments == 0)
+                    return 0;
+
+                else
+                    return getIntersectionSegments(gt.segmentArea, pred.segmentArea).size() / getUnionSegments(gt.segmentArea, pred.segmentArea).size();
+            }
+            else
+            {
+                std::cerr << "Ids are not well predicted." << std::endl;
+
+                float intersectionSegments = getIntersectionSegments(gt.segmentArea, pred.segmentArea).size();
+                float unionSegments = getUnionSegments(gt.segmentArea, pred.segmentArea).size();
+
+                if (intersectionSegments == 0 || unionSegments == 0)
+                    return 0;
+
+                else
+                    return getIntersectionSegments(gt.segmentArea, pred.segmentArea).size() / getUnionSegments(gt.segmentArea, pred.segmentArea).size();
             }
         }
     }
-
-    if (numPairs > 0) {
-        float meanIOU = sumIOU / numPairs;
-        return meanIOU;
-    }
-
 }
 
+std::set<cv::Point> getUnionSegments(cv::Mat &S1, cv::Mat &S2)
+{
+    std::set<cv::Point> unionSet;
+    for (int i = 0; i < S1.rows; i++)
+    {
+        for (int j = 0; j < S1.cols; j++)
+        {
+            if (S1.at<uchar>(i, j) > 0)
+                unionSet.insert(cv::Point(j, i));
+        }
+    }
+    for (int i = 0; i < S2.rows; i++)
+    {
+        for (int j = 0; j < S2.cols; j++)
+        {
+            if (S2.at<uchar>(i, j) > 0)
+                unionSet.insert(cv::Point(j, i));
+        }
+    }
+    return unionSet;
+}
 
-//Function that returns the ratio between the "after" and "before" images
-double calculatePixelRatio(int pixelsAfterimg, int pixelsBeforeimg) {
-    
-    // Check if the number of pixels in the second area is zero to avoid division by zero
-    if (pixelsAfterimg == 0) {
+std::set<cv::Point> getIntersectionSegments(cv::Mat &S1, cv::Mat &S2)
+{
+    std::set<cv::Point> intersectionSet;
+    for (int i = 0; i < S1.rows; i++)
+    {
+        for (int j = 0; j < S1.cols; j++)
+        {
+            if (S1.at<uchar>(i, j) > 0 && S2.at<uchar>(i, j) > 0)
+                intersectionSet.insert(cv::Point(j, i));
+        }
+    }
+    return intersectionSet;
+}
+
+float calculatePixelRatio(int pixelsAfterimg, int pixelsBeforeimg)
+{
+    if (pixelsBeforeimg == 0)
+    {
         std::cout << "Error: Division by zero." << std::endl;
-        return 0.0;
+        return 0;
     }
-
-    double ratio = double(pixelsAfterimg) / pixelsBeforeimg;
-
-    return ratio;
+    return float(pixelsAfterimg) / pixelsBeforeimg;
 }
 
+/*
+    @params:
+        finalPairs: vector of Couples that contain all the infos about segmentation, areas,
+                    and original and leftover matching
+        gtMasks:    vector of Couples of all the areas in the grond truth masks
 
-/*double calculateAveragePrecision(const std::vector<double> &results, const std::vector<double> &relevantDocs, double iouThreshold)
+        !! DISCLAIMER !!
+        !! There is the need to create a vector that only contains the segments of the gt masks !!
+        !! This must be created in the Handler function of the metrics !!
+*/
+void computeBeforeAfterRatio(const std::vector<Couple> &finalPairs, const std::vector<Couple> &gtMasks)
 {
-    int count = 0;
-    double sumPrecision = 0.0;
-    double sumIoU = 0.0;
-    for (int i = 0; i < results.size(); i++)
-    {
-        if (find(relevantDocs.begin(), relevantDocs.end(), results[i]) != relevantDocs.end())
-        {
-            count++;
-            sumPrecision += static_cast<double>(count) / (i + 1);
+    int pixelsAfterimg = 0, pixelsBeforeimg = 0;
 
-            // Calculate Intersection over Union (IoU)
-            double intersection = count;
-            double unionSize = i + 1;
-            double iou = intersection / unionSize;
-            sumIoU += iou;
+    std::vector<float> ourRatios, gtRatios;
+
+    // 1st PART: Our vector of Matches Originals / Leftovers //
+    for (const Couple &c : finalPairs)
+    {
+        float areaLeftover, areaOriginal, result;
+
+        // AREA LEFTOVER
+        if (c.leftoverBB.areas.size() > 1)
+            areaLeftover = c.leftoverBB.areas[0] + c.leftoverBB.areas[1]; // If there are more segments, it sums
+                                                                          // yellow and blue segments (k=3)
+        else                                                              // Else it only takes the yellow area
+            areaLeftover = c.leftoverBB.areas[0];
+        // AREA ORIGINAL
+        if (c.originalBB.areas.size() > 1)
+            areaOriginal = c.originalBB.areas[0] + c.originalBB.areas[1]; // If there are more segments, it sums
+                                                                          // yellow and blue segments (k=3)
+        else                                                              // Else it only takes the yellow area
+            areaOriginal = c.originalBB.areas[0];
+
+        // RESULT COMPUTATION
+        if (areaOriginal == 0)
+        {
+            std::cerr << "Warning! Dividing by 0! \n";
+            // ourRatios.push_back(0);
+        }
+        else
+        {
+            result = calculatePixelRatio(areaLeftover, areaOriginal);
+            ourRatios.push_back(result);
         }
     }
-    if (count == 0)
+
+    // 2nd PART: GT vector of Matches Originals / Leftovers //
+
+    for (const Couple &c : gtMasks)
     {
-        return 0.0;
+        float areaLeftover, areaOriginal, result;
+        if (c.leftoverBB.areas.size() > 1)
+            areaLeftover = c.leftoverBB.areas[0] + c.leftoverBB.areas[1];
+        else
+            areaLeftover = c.leftoverBB.areas[0];
+
+        if (c.originalBB.areas.size() > 1)
+            areaOriginal = c.originalBB.areas[0] + c.originalBB.areas[1];
+        else
+            areaOriginal = c.originalBB.areas[0];
+
+        if (areaOriginal == 0)
+        {
+            std::cerr << "Warning! Dividing by 0! \n";
+            // gtRatios.push_back(0);
+        }
+        else
+        {
+            result = calculatePixelRatio(areaLeftover, areaOriginal);
+            gtRatios.push_back(result);
+        }
     }
-    double averageIoU = sumIoU / count;
-    return sumPrecision / count;
 }
-
-void calculateMetrics(const std::vector<std::vector<double>> &allResults, const std::vector<std::vector<double>> &allRelevantDocs, double iouThreshold, double &map, double &meanIoU)
-{
-    double sumAP = 0.0;
-    double sumIoU = 0.0;
-    int numQueries = allResults.size();
-    int validQueries = 0; // Count of queries with IoU threshold >= 0.5
-    for (int i = 0; i < numQueries; ++i)
-    {
-        double ap = calculateAveragePrecision(allResults[i], allRelevantDocs[i], iouThreshold);
-        if (iouThreshold >= 0.5)
-        {
-            sumAP += ap;
-            sumIoU += meanIoU;
-            validQueries++;
-        }
-    }
-    if (validQueries == 0)
-    {
-        map = 0.0;
-        meanIoU = 0.0;
-    }
-    else
-    {
-        map = sumAP / validQueries;
-        meanIoU = sumIoU / validQueries;
-    }
-}*/

@@ -8,8 +8,7 @@
 enum DescriptorType
 {
     SURF,
-    SIFT,
-    ORB
+    SIFT
 };
 
 // Descriptor creation using Factory Pattern

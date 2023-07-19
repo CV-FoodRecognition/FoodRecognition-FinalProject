@@ -1,6 +1,10 @@
 #ifndef UTILS_H
 #define UTILS_H
 
+/*
+Written by @nicolacalzone and @rickyvendra
+*/
+
 #include <string>
 #include <vector>
 #include <opencv2/opencv.hpp>
@@ -21,11 +25,21 @@ enum SharpnessType
 
 struct FoodData
 {
+    cv::Mat src;
     cv::Rect box;
     std::vector<std::string> labels;
     std::vector<int> ids;
-    cv::Mat area;
-    int nonZeroArea;
+    cv::Mat segmentArea;
+};
+
+struct FoodDataContainer
+{
+    cv::Mat src;
+    cv::Mat segmentArea;
+    std::vector<cv::Rect> boxes;
+    std::vector<std::vector<std::string>> labels;
+    std::vector<std::vector<int>> ids;
+    std::vector<int> areas;
 };
 
 struct foodTemplate
@@ -41,6 +55,8 @@ struct Couple
     cv::Mat leftover;
     double dist = 0;
     double matches = 0;
+    FoodDataContainer originalBB;
+    FoodDataContainer leftoverBB;
 };
 
 struct Result

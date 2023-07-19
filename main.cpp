@@ -8,6 +8,10 @@
 #include "headers/metrics.h"
 #include "headers/detect_recognition.h"
 
+/*
+Written by @nicolacalzone and @rickyvendra
+*/
+
 using namespace cv;
 using namespace std;
 
@@ -81,17 +85,21 @@ int main(int argc, char **argv)
     std::vector<int> &radia2 = imgProcLeftovers.getRadius();
 
     cv::Mat final = in1.clone();
+    std::vector<FoodData> foodData;
+    detectAndCompute(in1, dishes, dishesMatches, acceptedCircles, foodData, templates, final);
+    showImg("Detect and Recognize", final);
+
     std::vector<cv::Mat> removedDishes;
     for (int d = 0; d < dishes.size(); d++)
     {
         // FILTERS
         cv::Mat src = dishes[d];
         cv::Mat rmvDish = dishes[d];
-        cv::Mat shifted;
-        bilateralFilter(src, shifted, 1, 0.5, 0.5);
-        cv::pyrMeanShiftFiltering(shifted, shifted, 40, 200);
+        // cv::Mat shifted;
+        // bilateralFilter(src, shifted, 1, 0.5, 0.5);
+        // cv::pyrMeanShiftFiltering(shifted, shifted, 40, 200);
         // showImg("PyrMean", shifted);
-        removeDish(shifted);
+        // removeDish(shifted);
 
         removeDish(rmvDish);
         sharpenImg(rmvDish, SharpnessType::LAPLACIAN);
@@ -124,10 +132,6 @@ int main(int argc, char **argv)
         imwrite("../images/Results/kmeansResult" + to_string(d) + ".jpg", r); */
     }
 
-    std::vector<FoodData> foodData;
-    // detectAndCompute(in1, dishes, dishesMatches, acceptedCircles, foodData, templates, final);
-    // showImg("Detect and Recognize", final);
-
     cout << "XX" << endl;
 
     /* // READING RESULTS
@@ -138,7 +142,12 @@ int main(int argc, char **argv)
    } */
 
     Leftover leftover;
-    leftover.matchLeftovers(removedDishes, leftovers, leftoverImg, radia1, radia2);
+
+    /*std::vector<cv::Mat> inputDishes;
+    for (const auto &dish : dishesWithBB)
+        inputDishes.push_back(dish.first);*/
+
+    leftover.matchLeftovers(removedDishes, leftovers, leftoverImg, radia1, radia2, foodData);
 
     cout << "\n---------------\nfine leftovers" << endl;
 

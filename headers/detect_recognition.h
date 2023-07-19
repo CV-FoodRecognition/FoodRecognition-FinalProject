@@ -1,6 +1,10 @@
 #ifndef DETECT_CLASS_H
 #define DETECT_CLASS_H
 
+/*
+Written by @rickyvendra
+*/
+
 #include <vector>
 #include <opencv2/opencv.hpp>
 #include <opencv2/core.hpp>
@@ -11,6 +15,8 @@
 #include "segmentation.h"
 #include "descriptor_methods.h"
 #include "matcher_methods.h"
+#include <utility> // for std::pair
+using std::pair;
 
 int computeBestDish(foodTemplate food, std::vector<cv::Mat> dishes, std::vector<int> dishesMatches);
 cv::Scalar computeAvgColor(cv::Mat img);
@@ -26,6 +32,7 @@ void boundSalad(cv::Mat &input, std::vector<cv::Vec3f> accepted_circles,
                 cv::Mat &final, std::vector<FoodData> &foodData);
 void boundPotatoes(cv::Mat &dish, cv::Mat &final, std::vector<FoodData> &foodData, std::vector<int> forbidden, int max_key);
 void detectAndCompute(cv::Mat in1, std::vector<cv::Mat> dishes, std::vector<int> dishesMatches,
-                      std::vector<cv::Vec3f> accepted_circles, std::vector<FoodData> &foodData, std::vector<foodTemplate> templates, cv::Mat &final);
+                      std::vector<cv::Vec3f> accepted_circles, std::vector<FoodData> &foodData, std::vector<foodTemplate> templates,
+                      cv::Mat &final);
 
 #endif
