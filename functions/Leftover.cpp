@@ -183,7 +183,7 @@ std::vector<std::vector<SegmentCouple>> Leftover::matchLeftovers(std::vector<cv:
     printVector(pairCieAvgs, "Pair CIE");*/
 
     std::vector<Couple> finalPairs = jointPredictions();
-    printVector(finalPairs, "Predictions");
+    // printVector(finalPairs, "Predictions");
 
     std::vector<std::vector<SegmentCouple>> output;
 

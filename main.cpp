@@ -85,9 +85,9 @@ int main(int argc, char **argv)
 
     cout << "show final" << endl;
     drawBoundingBoxes(final, foodData);
-    cv::namedWindow("final");
-    cv::imshow("final", final);
-    cv::waitKey();
+    // cv::namedWindow("final");
+    // cv::imshow("final", final);
+    // cv::waitKey();
 
     for (Dish d : dishesData)
     {
@@ -96,7 +96,7 @@ int main(int argc, char **argv)
             for (FoodData f : d.getFoods())
             {
                 cout << f.label << endl;
-                showImg("segmento cibo", f.segmentArea);
+                // showImg("segmento cibo", f.segmentArea);
             }
         }
     }

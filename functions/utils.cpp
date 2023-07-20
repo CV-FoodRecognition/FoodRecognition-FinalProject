@@ -49,6 +49,7 @@ void concatShowImg(std::string title, cv::Mat original, cv::Mat leftover)
     cv::namedWindow(title, cv::WINDOW_NORMAL);
     cv::hconcat(original, leftover, combined);
     cv::imshow(title, combined);
+    cv::imwrite("../images/Results/leftoverResults/tray8/3_" + title + ".jpg", combined);
     cv::waitKey(0);
 }
 cv::Mat convertBGRtoCIELAB(const cv::Mat &bgrImage)
