@@ -1,7 +1,7 @@
 #include "../headers/utils.h"
 
 /*
-    Written by @nicolacalzone
+    Written by @nicolacalzone and  @rickyvendra
 */
 bool isInsideCircle(cv::Vec3i circle, int x, int y)
 {
@@ -86,30 +86,20 @@ std::vector<cv::Mat> convertBGRtoCIELAB(const std::vector<cv::Mat> &bgrImages)
 
     return cielabImages;
 }
-std::string enumToString(FoodType label)
-{
-    switch (label)
-    {
-    case FoodType::Meat:
-        return "Meat";
-    case FoodType::Beans:
-        return "Beans";
-    default:
-        return "UNKNOWN";
-    }
-}
+
 double computeArea(cv::Rect box)
 {
     return box.width * box.height;
 }
+
 double computeCircleArea(double radius)
 {
     return 3.1417 * radius * radius;
 }
+
 /*
     Computes area of a KMeans Segment
 */
-
 void computeSegmentArea(SegmentAreas &sa)
 {
     cv::Mat maskYellow, maskBlue, maskGreen, maskRed, maskBlack;
@@ -125,6 +115,7 @@ void computeSegmentArea(SegmentAreas &sa)
     sa.areaRed = countNonZero(maskRed);
     sa.areaBlack = countNonZero(maskBlack);
 }
+
 bool areSameImage(const cv::Mat &in1, const cv::Mat &in2)
 {
     if (in1.size() != in2.size() || in1.type() != in2.type())
@@ -135,6 +126,7 @@ bool areSameImage(const cv::Mat &in1, const cv::Mat &in2)
 
     return cv::countNonZero(mask) == 0;
 }
+
 /*
     SharpnessType:
     -   LAPLACIAN
@@ -161,30 +153,6 @@ void sharpenImg(cv::Mat &src, SharpnessType t)
     }
 }
 
-cv::Mat getYellowArea(cv::Mat &segmented)
-{
-    cv::Mat yellow = cv::Mat::zeros(segmented.size(), CV_8UC1);
-    for (int i = 0; i < segmented.rows; i++)
-        for (int j = 0; j < segmented.cols; j++)
-            if (segmented.at<cv::Vec3b>(i, j) == cv::Vec3b(0, 255, 255))
-            {
-                yellow.at<uchar>(i, j) = 255;
-            }
-    return yellow;
-}
-
-cv::Mat getBlueArea(cv::Mat &segmented)
-{
-    cv::Mat blue = cv::Mat::zeros(segmented.size(), CV_8UC1);
-    for (int i = 0; i < segmented.rows; i++)
-        for (int j = 0; j < segmented.cols; j++)
-            if (segmented.at<cv::Vec3b>(i, j) == cv::Vec3b(255, 0, 0))
-            {
-                blue.at<uchar>(i, j) = 255;
-            }
-    return blue;
-}
-
 cv::Mat convertGray(cv::Mat &src)
 {
     cv::Mat gray;
@@ -193,8 +161,6 @@ cv::Mat convertGray(cv::Mat &src)
 }
 
 /*
-    Written by @rickyvendra
-
     size = number of templates
     fileName = name of the images of the templates
     label = string to label the food
@@ -222,6 +188,30 @@ void addFood(int size, std::string fileName, std::string label, int id,
     myFood.id = id;
     templates.push_back(myFood);
     return;
+}
+
+cv::Mat getYellowArea(cv::Mat &segmented)
+{
+    cv::Mat yellow = cv::Mat::zeros(segmented.size(), CV_8UC1);
+    for (int i = 0; i < segmented.rows; i++)
+        for (int j = 0; j < segmented.cols; j++)
+            if (segmented.at<cv::Vec3b>(i, j) == cv::Vec3b(0, 255, 255))
+            {
+                yellow.at<uchar>(i, j) = 255;
+            }
+    return yellow;
+}
+
+cv::Mat getBlueArea(cv::Mat &segmented)
+{
+    cv::Mat blue = cv::Mat::zeros(segmented.size(), CV_8UC1);
+    for (int i = 0; i < segmented.rows; i++)
+        for (int j = 0; j < segmented.cols; j++)
+            if (segmented.at<cv::Vec3b>(i, j) == cv::Vec3b(255, 0, 0))
+            {
+                blue.at<uchar>(i, j) = 255;
+            }
+    return blue;
 }
 
 void removeDish(cv::Mat &src)

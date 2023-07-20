@@ -13,12 +13,6 @@ Written by @nicolacalzone and @rickyvendra
 
 const float IOUthresh = 0.5;
 
-enum FoodType
-{
-    Meat,
-    Beans
-};
-
 enum SharpnessType
 {
     LAPLACIAN,
@@ -47,8 +41,7 @@ struct Couple
     cv::Mat leftover;
     double dist = -1;
     double matches = -1;
-    std::vector<FoodData> dataOnFoodOriginal;
-    std::vector<FoodData> dataOnFoodLeftover;
+    bool empty = false;
 };
 
 struct SegmentCouple
@@ -58,6 +51,7 @@ struct SegmentCouple
     cv::Mat segmentLeftover;
 };
 
+// Used as Result from SIFT and SURF
 struct Result
 {
     std::vector<cv::KeyPoint> kp1, kp2; // keypoints
@@ -89,19 +83,10 @@ struct Area
     cv::Mat segmentedMask;
 };
 
-struct BoxLabel
-{
-    cv::Rect mser_box;
-    FoodType label;
-    cv::Scalar averageBoxColor;
-    double areaBox;
-};
-
 cv::Mat getYellowArea(cv::Mat &segmented);
 cv::Mat getBlueArea(cv::Mat &segmented);
 void addFood(int size, std::string fileName, std::string label, int id,
              std::string path, std::vector<foodTemplate> &templates);
-std::string enumToString(FoodType label);
 bool isInsideCircle(cv::Vec3i c, int x, int y);
 void showImg(std::string title, cv::Mat image);
 void concatShowImg(std::string title, cv::Mat image1, cv::Mat image2);

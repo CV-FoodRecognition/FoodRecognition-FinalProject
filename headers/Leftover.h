@@ -22,9 +22,9 @@ class Leftover
 
 public:
     // HANDLER
-    void matchLeftovers(std::vector<cv::Mat> &removedDishes, std::vector<Dish> dishesData, const std::vector<cv::Mat> &leftovers,
-                        cv::Mat leftover, const std::vector<int> &radia1, const std::vector<int> &radia2,
-                        std::vector<FoodData> boxes);
+    std::vector<std::vector<SegmentCouple>> matchLeftovers(std::vector<cv::Mat> &removedDishes, std::vector<Dish> dishesData, const std::vector<cv::Mat> &leftovers,
+                                                           cv::Mat leftover, const std::vector<int> &radia1, const std::vector<int> &radia2,
+                                                           std::vector<FoodData> boxes);
 
     // GETTERS
     std::vector<Couple> getPairAvgColors() const { return pairAvgColors; }

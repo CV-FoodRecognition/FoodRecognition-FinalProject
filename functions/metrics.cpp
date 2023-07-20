@@ -2,35 +2,38 @@
 
 using namespace std;
 
-void handlerFunction(const std::vector<Couple> &finalPairs, std::vector<Couple> &gtPairs)
+void handlerFunction(const std::vector<SegmentCouple> &finalPairs,
+                     std::vector<SegmentCouple> &gtPairsOriginal, std::vector<SegmentCouple> &gtPairsLeftovers)
 {
     for (int i = 0; i < 8; i++)
     {
-        std::string subDir = "Tray" + to_string(i + 1);
-        for (int j = 0; j < 3; j++)
-            readTray(gtPairs, subDir, j);
     }
 }
 
-void readTray(std::vector<Couple> &gtPairs, std::string subDir, int j)
+void readTray(std::vector<SegmentCouple> &gtPairs, std::string subDir)
 {
     std::string directory = "../masks/" + subDir;
     std::string original = "food_image_mask.png";
-    std::string leftover = "leftover" + to_string(j) + ".png";
+    std::string leftover;
 
+    // GT Original
     cv::Mat origImg = cv::imread(directory + original, CV_8UC1);
-    cv::Mat leftImg = cv::imread(directory + leftover, CV_8UC1);
+    std::string s1 = "../bounding_boxes/" + subDir + "food_image_bounding_box.txt";
+    std::vector<FoodData> dataOrig = parseGroundTruth(s1);
+    std::vector<FoodData> dataLeft;
 
-    std::vector<FoodData> dataOrig = parseGroundTruth("../bounding_boxes/" + subDir + "food_image_bounding_box.txt");
-    std::vector<FoodData> dataLeft = parseGroundTruth("../bounding_boxes/" + subDir + "leftover1_bounding_box.txt");
+    // GT 3 Leftovers
+    for (int j = 0; j < 3; j++)
+    {
+        leftover = "leftover" + to_string(j) + ".png";
+        cv::Mat leftImg = cv::imread(directory + leftover, CV_8UC1);
 
-    /*
-        !! DISCLAIMER !!
-        !! Da rivedere le strutture usate... Servono dei FoodContainer non dei FoodData !!
-    */
-    Couple c;
-    c.leftoverBB = dataLeft;
-    c.originalBB = dataOrig;
+        std::string s2 = "../bounding_boxes/" + subDir + leftover + "_bounding_box.txt";
+        std::cout << "s1: " << s1 << " -- s2: " << s2 << std::endl;
+
+        dataLeft = parseGroundTruth(s2);
+    }
+
     gtPairs.push_back(c);
 }
 
@@ -75,7 +78,7 @@ std::vector<FoodData> parseGroundTruth(const std::string &filename)
         }
 
         FoodData bbox;
-        bbox.ids[0] = id;
+        bbox.id = id;
         bbox.box.x = coords[0];
         bbox.box.y = coords[1];
         bbox.box.width = coords[2];
@@ -172,8 +175,21 @@ std::vector<int> getCumulativeFP(const std::vector<std::string> &matchStatuses)
     }
     return cumulativeFP;
 }
-
 // For mAP 5
+std::vector<int> getCumulativeFN(const std::vector<std::string> &matchStatuses)
+{
+    std::vector<int> cumulativeFN;
+    int cumFN = 0;
+    for (const auto &status : matchStatuses)
+    {
+        if (status == "FN")
+            cumFN += 1;
+        cumulativeFN.push_back(cumFN);
+    }
+    return cumulativeFN;
+}
+
+// For mAP 6
 std::vector<float> getPrecision(const std::vector<int> &cumulativeTP, const std::vector<int> &cumulativeFP)
 {
     std::vector<float> precision;
@@ -185,7 +201,7 @@ std::vector<float> getPrecision(const std::vector<int> &cumulativeTP, const std:
     return precision;
 }
 
-// For mAP 6
+// For mAP 7
 std::vector<float> getRecall(const std::vector<int> &cumulativeTP, float gtTotal)
 {
     std::vector<float> recall;
@@ -197,16 +213,59 @@ std::vector<float> getRecall(const std::vector<int> &cumulativeTP, float gtTotal
     return recall;
 }
 
+// For mAP 8
+std::vector<float> getRecall(const std::vector<int> &cumulativeTP, const std::vector<int> &cumulativeFN)
+{
+    std::vector<float> recall;
+    for (int i = 0; i < cumulativeTP.size() && i < cumulativeFN.size(); i++)
+    {
+        float rec = cumulativeTP[i] / float(cumulativeTP[i] + cumulativeFN[i]);
+        recall.push_back(rec);
+    }
+    return recall;
+}
+
+// MEAN AVERAGE PRECISION
+float getAP(const std::vector<float> &precisions, const std::vector<int> &classOccurrences) // -input:  takes the values   of the precisions of a given class and
+                                                                                            // the number of times that specific class appears
+                                                                                            // - returns the precision class value
+{
+    if (precisions.size() != classOccurrences.size())
+    {
+        std::cerr << "Error: The size of precisions and classOccurrences vectors must be the same." << std::endl;
+        return 0.0;
+    }
+
+    double sumPrecision = 0.0;
+    int totalOccurrences = 0;
+
+    for (int i = 0; i < precisions.size(); i++)
+    {
+        sumPrecision += precisions[i] * classOccurrences[i];
+        totalOccurrences += classOccurrences[i];
+    }
+
+    if (totalOccurrences == 0)
+    {
+        std::cerr << "Error: The total number of class occurrences is zero." << std::endl;
+        return 0.0;
+    }
+
+    float precisionClass = sumPrecision / totalOccurrences;
+
+    return precisionClass;
+}
+
 // -------------------------------------------------------------------------------------------------------- //
 
 // Function that returns the mean between all the ground truth bounding_boxes and the predicted one
-float get_meaniou(std::vector<FoodDataContainer> &groundTruth, std::vector<FoodDataContainer> &predictions)
+float get_meaniou(std::vector<FoodData> &groundTruth, std::vector<FoodData> &predictions)
 {
     for (auto &gt : groundTruth)
     {
         for (auto &pred : predictions)
         {
-            if (gt.ids[0] == pred.ids[0])
+            if (gt.id == pred.id)
             {
                 float intersectionSegments = getIntersectionSegments(gt.segmentArea, pred.segmentArea).size();
                 float unionSegments = getUnionSegments(gt.segmentArea, pred.segmentArea).size();
@@ -290,19 +349,19 @@ float calculatePixelRatio(int pixelsAfterimg, int pixelsBeforeimg)
         !! There is the need to create a vector that only contains the segments of the gt masks !!
         !! This must be created in the Handler function of the metrics !!
 */
-void computeBeforeAfterRatio(const std::vector<Couple> &finalPairs, const std::vector<Couple> &gtMasks)
+void computeBeforeAfterRatio(const std::vector<SegmentCouple> &finalPairs, const std::vector<SegmentCouple> &gtMasks)
 {
     int pixelsAfterimg = 0, pixelsBeforeimg = 0;
 
     std::vector<float> ourRatios, gtRatios;
 
     // 1st PART: Our vector of Matches Originals / Leftovers //
-    for (const Couple &c : finalPairs)
+    for (const SegmentCouple &c : finalPairs)
     {
         float areaLeftover, areaOriginal, result;
 
         // AREA LEFTOVER
-        if (c.leftoverBB.areas.size() > 1)
+        if (c.segmentLeftover > 1)
             areaLeftover = c.leftoverBB.areas[0] + c.leftoverBB.areas[1]; // If there are more segments, it sums
                                                                           // yellow and blue segments (k=3)
         else                                                              // Else it only takes the yellow area
