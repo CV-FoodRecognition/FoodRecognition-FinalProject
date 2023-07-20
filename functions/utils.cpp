@@ -109,6 +109,7 @@ double computeCircleArea(double radius)
 /*
     Computes area of a KMeans Segment
 */
+
 void computeSegmentArea(SegmentAreas &sa)
 {
     cv::Mat maskYellow, maskBlue, maskGreen, maskRed, maskBlack;
@@ -160,6 +161,30 @@ void sharpenImg(cv::Mat &src, SharpnessType t)
     }
 }
 
+cv::Mat getYellowArea(cv::Mat &segmented)
+{
+    cv::Mat yellow = cv::Mat::zeros(segmented.size(), CV_8UC1);
+    for (int i = 0; i < segmented.rows; i++)
+        for (int j = 0; j < segmented.cols; j++)
+            if (segmented.at<cv::Vec3b>(i, j) == cv::Vec3b(0, 255, 255))
+            {
+                yellow.at<uchar>(i, j) = 255;
+            }
+    return yellow;
+}
+
+cv::Mat getBlueArea(cv::Mat &segmented)
+{
+    cv::Mat blue = cv::Mat::zeros(segmented.size(), CV_8UC1);
+    for (int i = 0; i < segmented.rows; i++)
+        for (int j = 0; j < segmented.cols; j++)
+            if (segmented.at<cv::Vec3b>(i, j) == cv::Vec3b(255, 0, 0))
+            {
+                blue.at<uchar>(i, j) = 255;
+            }
+    return blue;
+}
+
 cv::Mat convertGray(cv::Mat &src)
 {
     cv::Mat gray;
@@ -198,6 +223,7 @@ void addFood(int size, std::string fileName, std::string label, int id,
     templates.push_back(myFood);
     return;
 }
+
 void removeDish(cv::Mat &src)
 {
     for (int k = 255; k > 20; k = k - 5)
@@ -207,6 +233,7 @@ void removeDish(cv::Mat &src)
         src.setTo(cv::Scalar(0, 0, 0), mask);
     }
 }
+
 void acceptCircles(cv::Mat &in, cv::Mat &mask, cv::Mat &temp,
                    cv::Vec3i &c, cv::Point &center, int radius,
                    std::vector<cv::Vec3f> &accepted_circles,

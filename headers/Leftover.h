@@ -14,14 +14,15 @@ Class written by @nicolacalzone
 #include "matcher_methods.h"
 #include "utils.h"
 #include "ImageProcessor.h"
-#include "detect_recognition.h"
+#include "compute_dish.h"
+#include "Dish.h"
 
 class Leftover
 {
 
 public:
     // HANDLER
-    void matchLeftovers(std::vector<cv::Mat> &removedDishes, const std::vector<cv::Mat> &leftovers,
+    void matchLeftovers(std::vector<cv::Mat> &removedDishes, std::vector<Dish> dishesData, const std::vector<cv::Mat> &leftovers,
                         cv::Mat leftover, const std::vector<int> &radia1, const std::vector<int> &radia2,
                         std::vector<FoodData> boxes);
 
@@ -76,7 +77,8 @@ private:
     // measurement methods for abnormal condition leftovers: 2:1, 3:1, 3:2 leftover-original
     void moreOriginalLessLeftovers(int type, std::vector<Couple> &finalPairs, std::vector<cv::Mat> &alreadyAssigned);
     // assign bounding boxes to every food
-    std::vector<Couple> assignBoundingBoxes(std::vector<FoodData> &boxes, std::vector<Couple> &finalPairs);
+    SegmentCouple createCouple(Couple c, Dish orig, std::vector<SegmentCouple> &finalVec);
+    std::vector<SegmentCouple> createFinalPairs(const Dish &dish, const std::vector<Couple> &finalPairs);
 };
 
 // ---------------------------------------------------------------------------------------------------- //
@@ -89,7 +91,7 @@ bool checkImageEqual(const cv::Mat &a, const cv::Mat &b);
 // utils for Leftover -- prints a vector of couples (which can be all passed pairs: by matches, avgcolor, cielab_avgcolor etc.)
 void printVector(const std::vector<Couple> &pairs, const std::string &title);
 // utils for Leftover -- prints a vector of couples but prints their segmentation
-void printVectorUpdate(const std::vector<Couple> &pairs, const std::string &title);
+void printVectorUpdate(const std::vector<SegmentCouple> &pairs, const std::string &title);
 // utils for Leftover -- delta E computation for CIELAB comparison
 double computeDeltaE(const cv::Scalar &c1, const cv::Scalar &c2);
 

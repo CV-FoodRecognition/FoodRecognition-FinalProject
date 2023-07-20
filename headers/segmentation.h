@@ -6,7 +6,7 @@ Written by @nicolacalzone and @rickyvendra
 */
 
 #include "utils.h"
-#include "detect_recognition.h"
+#include "compute_dish.h"
 #include <opencv2/opencv.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/imgproc.hpp>

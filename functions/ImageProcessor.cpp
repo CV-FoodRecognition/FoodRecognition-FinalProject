@@ -47,6 +47,22 @@ void ImageProcessor::doHough(cv::Mat &in)
         cv::Vec3i c = acceptedCircles[i];
 }
 
+std::vector<cv::Mat> ImageProcessor::removeDish(const std::vector<cv::Mat> &src)
+{
+    std::vector<cv::Mat> output;
+    for (cv::Mat dish : src)
+    {
+        for (int k = 255; k > 20; k = k - 5)
+        {
+            cv::Mat mask;
+            cv::inRange(src, cv::Scalar(k - 40, k - 40, k - 40), cv::Scalar(k, k, k), mask);
+            dish.setTo(cv::Scalar(0, 0, 0), mask);
+        }
+        output.push_back(dish);
+    }
+    return output;
+}
+
 void ImageProcessor::doMSER(cv::Mat &shifted, cv::Mat &result)
 {
     std::cout << "1 start" << std::endl;

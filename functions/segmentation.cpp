@@ -65,9 +65,8 @@ int boundBreadLeftover(cv::Mat &input, std::vector<cv::Mat> &dishes,
 
     FoodData bb;
     bb.box = box;
-
-    bb.labels.push_back("bread");
-    bb.ids.push_back(13);
+    bb.label = "bread";
+    bb.id = (13);
     boundingBoxes.push_back(bb);
 
     return area;

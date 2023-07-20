@@ -27,21 +27,11 @@ enum SharpnessType
 
 struct FoodData
 {
-    cv::Mat src;
     cv::Rect box;
-    std::vector<std::string> labels;
-    std::vector<int> ids;
+    std::string label;
+    int id;
     cv::Mat segmentArea;
-};
-
-struct FoodDataContainer
-{
-    cv::Mat src;
-    cv::Mat segmentArea;
-    std::vector<cv::Rect> boxes;
-    std::vector<std::vector<std::string>> labels;
-    std::vector<std::vector<int>> ids;
-    std::vector<int> areas;
+    int area;
 };
 
 struct foodTemplate
@@ -55,10 +45,17 @@ struct Couple
 {
     cv::Mat original;
     cv::Mat leftover;
-    double dist = 0;
-    double matches = 0;
-    FoodDataContainer originalBB;
-    FoodDataContainer leftoverBB;
+    double dist = -1;
+    double matches = -1;
+    std::vector<FoodData> dataOnFoodOriginal;
+    std::vector<FoodData> dataOnFoodLeftover;
+};
+
+struct SegmentCouple
+{
+    int id = -1;
+    cv::Mat segmentOriginal;
+    cv::Mat segmentLeftover;
 };
 
 struct Result
@@ -100,6 +97,8 @@ struct BoxLabel
     double areaBox;
 };
 
+cv::Mat getYellowArea(cv::Mat &segmented);
+cv::Mat getBlueArea(cv::Mat &segmented);
 void addFood(int size, std::string fileName, std::string label, int id,
              std::string path, std::vector<foodTemplate> &templates);
 std::string enumToString(FoodType label);
@@ -110,7 +109,7 @@ void sharpenImg(cv::Mat &src, SharpnessType t);
 cv::Mat convertGray(cv::Mat &src);
 cv::Mat convertBGRtoCIELAB(const cv::Mat &bgrImage);
 std::vector<cv::Mat> convertBGRtoCIELAB(const std::vector<cv::Mat> &bgrImages);
-void removeDish(cv::Mat &shifted);
+void removeDish(cv::Mat &src);
 double computeArea(cv::Rect box);
 double computeCircleArea(double radius);
 void computeSegmentArea(SegmentAreas &sa);

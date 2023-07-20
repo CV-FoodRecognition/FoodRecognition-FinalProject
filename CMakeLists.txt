@@ -7,7 +7,7 @@ include_directories(headers)
 
 add_executable(main main.cpp headers/descriptor_methods.h
   headers/matcher_methods.h
-  functions/detect_recognition.cpp
+  functions/compute_dish.cpp
   functions/Leftover.cpp
   functions/utils.cpp 
   functions/segmentation.cpp

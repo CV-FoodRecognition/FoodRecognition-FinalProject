@@ -4,7 +4,7 @@
 Class written by @nicolacalzone
 */
 
-void Leftover::matchLeftovers(std::vector<cv::Mat> &removedDishes, const std::vector<cv::Mat> &leftovers,
+void Leftover::matchLeftovers(std::vector<cv::Mat> &removedDishes, std::vector<Dish> dishesData, const std::vector<cv::Mat> &leftovers,
                               cv::Mat leftover, const std::vector<int> &radia1, const std::vector<int> &radia2,
                               std::vector<FoodData> boxes)
 {
@@ -13,15 +13,6 @@ void Leftover::matchLeftovers(std::vector<cv::Mat> &removedDishes, const std::ve
     bool hasThreeOriginals = removedDishes.size() == 3;
 
     std::cout << "hasThreeOriginals: " << hasThreeOriginals << std::endl;
-
-    /*std::vector<cv::Mat> removedDishes;
-    for (int d = 0; d < dishes.size(); d++)
-    {
-        cv::Mat rmvDish = dishes[d];
-        removeDish(rmvDish);
-        sharpenImg(rmvDish, SharpnessType::LAPLACIAN);
-        removedDishes.push_back(rmvDish);
-    }*/
 
     // Original FOR 1 DISH
     cv::Mat original1 = removedDishes[0];
@@ -169,18 +160,6 @@ void Leftover::matchLeftovers(std::vector<cv::Mat> &removedDishes, const std::ve
         circleAreasLeftover.push_back(circleLeftover);
     }
 
-    /*std::cout << "lenght original: " << removedDishes.size() << std::endl;
-     std::cout << "lenght leftovers: " << removedLeftovers.size() << std::endl;
-
-     std::cout << "lenght areas original: " << circleAreasOriginal.size() << std::endl;
-     std::cout << "lenght areas leftovers: " << circleAreasLeftover.size() << std::endl;
-
-     std::cout << "lenght avg color original: " << avgOriginals.size() << std::endl;
-     std::cout << "lenght avg color leftovers: " << avgLefts.size() << std::endl;
-
-     std::cout << "lenght avg cielab original: " << avgCIELABOriginals.size() << std::endl;
-     std::cout << "lenght avg cielab leftovers: " << avgCIELABLefts.size() << std::endl;*/
-
     std::cout << "pairMatches: " << pairMatches.size() << std::endl;
 
     // COUPLE by AREA CIRCLE
@@ -202,10 +181,14 @@ void Leftover::matchLeftovers(std::vector<cv::Mat> &removedDishes, const std::ve
     printVector(pairCieAvgs, "Pair CIE");*/
 
     std::vector<Couple> finalPairs = jointPredictions();
+    printVector(finalPairs, "Predictions");
 
-    std::vector<Couple> segmentedFinalWithBoxes = assignBoundingBoxes(boxes, finalPairs);
-    std::cout << "Size Segmented Vector: " << segmentedFinalWithBoxes.size();
-    printVectorUpdate(segmentedFinalWithBoxes, "final final");
+    for (Dish dish : dishesData)
+    {
+        std::vector<SegmentCouple> segmentedFinal = createFinalPairs(dish, finalPairs);
+        std::cout << "Size Segmented Vector: " << segmentedFinal.size();
+        printVectorUpdate(segmentedFinal, "final final");
+    }
 }
 
 /*
@@ -239,23 +222,22 @@ std::vector<Couple> Leftover::jointPredictions()
     */
     if (onlyOneLeftover)
     {
-        std::cout << "SELECTED PATH 1" << std::endl;
+        std::cout << "SELECTED PATH 1 -- 2/3 originals 1 leftover" << std::endl;
         int select = 1;
         moreOriginalLessLeftovers(select, finalPairs, alreadyAssigned);
     }
     else if (twoLeftoversThreeOriginals)
     {
-        std::cout << "SELECTED PATH 2" << std::endl;
+        std::cout << "SELECTED PATH 2 -- 3 originals 2 leftovers" << std::endl;
         int select = 2;
         moreOriginalLessLeftovers(select, finalPairs, alreadyAssigned);
     }
     else if (twoLeftoversTwoOriginals || threeLeftoversThreeOriginals)
     {
-        std::cout << "SELECTED PATH 3" << std::endl;
+        std::cout << "SELECTED PATH 3 -- normal conditions" << std::endl;
         normalConditionsPrediction(finalPairs);
     }
 
-    printVector(finalPairs, "Final Predictions");
     return finalPairs;
 }
 
@@ -312,20 +294,20 @@ void Leftover::moreOriginalLessLeftovers(int type, std::vector<Couple> &finalPai
     {
         if (originalDishes.size() == 2 || originalDishes.size() == 3)
         {
-            int maxMatchesIndex = 0;
-            int maxMatches = pairMatches[0].matches;
-            for (int i = 0; i < pairMatches.size(); i++)
+            int minDistIndex = 0;
+            int minDist = pairAvgColors[0].dist;
+            for (int i = 0; i < pairAvgColors.size(); i++)
             {
-                if (pairMatches[i].matches > maxMatches)
+                if (pairAvgColors[i].dist < minDist)
                 {
-                    maxMatches = pairMatches[i].matches;
-                    maxMatchesIndex = i;
+                    minDist = pairAvgColors[i].dist;
+                    minDistIndex = i;
                 }
             }
             Couple couple;
-            couple.leftover = pairMatches[maxMatchesIndex].leftover;
-            couple.original = pairMatches[maxMatchesIndex].original;
-            couple.matches = maxMatches;
+            couple.leftover = pairAvgColors[minDistIndex].leftover;
+            couple.original = pairAvgColors[minDistIndex].original;
+            couple.dist = minDist;
             finalPairs.push_back(couple);
 
             // Match with black picture
@@ -342,26 +324,25 @@ void Leftover::moreOriginalLessLeftovers(int type, std::vector<Couple> &finalPai
     }
     else if (type == 2)
     {
-        std::sort(pairMatches.begin(), pairMatches.end(), [](const Couple &a, const Couple &b)
-                  { return a.matches > b.matches; });
+        std::sort(pairAvgColors.begin(), pairAvgColors.end(), [](const Couple &a, const Couple &b)
+                  { return a.dist < b.dist; });
         for (int i = 0; i < 2; i++)
         {
             Couple couple;
-            couple.leftover = pairMatches[i].leftover;
-            couple.original = pairMatches[i].original;
-            couple.matches = pairMatches[i].matches;
+            couple.leftover = pairAvgColors[i].leftover;
+            couple.original = pairAvgColors[i].original;
+            couple.dist = pairAvgColors[i].dist;
             finalPairs.push_back(couple);
         }
         Couple emptyCouple;
         emptyCouple.leftover = cv::Mat::zeros(originalDishes[2].size(), originalDishes[2].type());
         std::string errMessage = "No matches found for this dish.";
         cv::putText(emptyCouple.leftover, errMessage, cv::Point(originalDishes[2].cols / 2.5, originalDishes[2].rows / 2.5), cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(255, 255, 255), 2);
-        emptyCouple.original = pairMatches[2].original;
-        emptyCouple.matches = -1;
+        emptyCouple.original = pairAvgColors[2].original;
+        emptyCouple.dist = -1;
         finalPairs.push_back(emptyCouple);
     }
 }
-
 // ------------------------------------------------------------------------------------------------------ //
 /*
     Computes Original and Leftover with similar CIELAB colors.
@@ -448,6 +429,7 @@ Couple Leftover::coupleMaxMatches(const std::vector<int> &matches,
             couple.leftover = leftovers[0];
             couple.original = original;
             couple.matches = matches[0];
+
             return couple;
         }
         else if (matches[1] >= matches[0] && matches[1] >= matches[2])
@@ -599,102 +581,101 @@ std::vector<Couple> Leftover::coupleMinAverageColor(const std::vector<cv::Mat> &
     @param: boxes
     @result: std::vector<Couple> segmentedPairsWithBBs
 */
-std::vector<Couple> Leftover::assignBoundingBoxes(std::vector<FoodData> &boxes, std::vector<Couple> &finalPairs)
+std::vector<SegmentCouple> Leftover::createFinalPairs(const Dish &dish, const std::vector<Couple> &finalPairs)
 {
+    std::vector<SegmentCouple> finalVec;
+    int i = 0;
+    for (Couple fp : finalPairs)
+    {
+        SegmentCouple c;
+        if (checkImageEqual(fp.original, dish.getDish()))
+            c = createCouple(fp, dish, finalVec);
+
+        i++;
+    }
+
+    return finalVec;
+}
+
+SegmentCouple Leftover::createCouple(Couple c, Dish orig, std::vector<SegmentCouple> &finalVec)
+{
+
+    SegmentCouple result;
     ImageProcessor ip;
 
-    std::vector<Couple> segmentedPairsWithBBs;
-    for (Couple &cp : finalPairs)
+    cv::Mat originalDish = c.original;
+    cv::Mat leftoverDish = c.leftover;
+
+    std::cout << "Num Foods " << orig.getFoods().size() << std::endl;
+
+    int i = 0;
+    for (FoodData f : orig.getFoods())
     {
-        // Loop to assign to each Couple the bounding boxes for original and leftover images
-        for (int i = 0; i < boxes.size(); i++)
+        ++i;
+        cv::Mat segmentOriginal;
+
+        originalDish.copyTo(segmentOriginal, f.segmentArea);
+        cv::Scalar avgColorOriginal = computeAvgColor(segmentOriginal);
+
+        int k = orig.getFoods().size() + 1;
+
+        cv::Mat shifted;
+        bilateralFilter(leftoverDish, shifted, 1, 0.5, 0.5);
+        cv::pyrMeanShiftFiltering(shifted, shifted, 40, 200);
+        cv::Mat segmentLeftover = ip.kmeansSegmentation(k, shifted);
+
+        if (k == 2)
         {
-            cp.originalBB.areas.resize(2);
+            result.id = f.id;
+            result.segmentOriginal = f.segmentArea;
+            result.segmentLeftover = getYellowArea(segmentLeftover);
 
-            std::cout << "box size: " << boxes.size() << "\n";
-            if (checkImageEqual(boxes[i].src, cp.original))
-            { // If boxes[i] image is the same image as the
+            std::cout << "K == 2\n";
+            std::cout << "Result " << i << " Segment original size: " << result.segmentOriginal.size() << std::endl;
+            std::cout << "Result " << i << " Segment Leftover size: " << result.segmentLeftover.size() << std::endl;
+            std::cout << "Result " << i << " Food id: " << result.id << std::endl;
 
-                int id0 = boxes[i].ids[0];
-
-                cp.originalBB.boxes.push_back(boxes[i].box);
-                cp.originalBB.ids.push_back(boxes[i].ids);
-                cp.originalBB.labels.push_back(boxes[i].labels);
-                if (id0 == 1 || id0 == 2 || id0 == 3 || id0 == 4 || id0 == 5 || id0 == 12)
-                {
-                    cp.originalBB.segmentArea = ip.kmeansSegmentation(2, boxes[i].src); // K = 2
-                    showImg(" ", cp.originalBB.segmentArea);
-                    SegmentAreas sa;
-                    sa.p1 = cp.originalBB.segmentArea;
-                    computeSegmentArea(sa);
-                    cp.originalBB.areas[0] = sa.areaYellow;
-                }
-                else
-                {
-                    cp.originalBB.segmentArea = ip.kmeansSegmentation(3, boxes[i].src); // K = 3
-                    showImg(" ", cp.originalBB.segmentArea);
-                    SegmentAreas sa;
-                    sa.p1 = cp.originalBB.segmentArea;
-                    computeSegmentArea(sa);
-                    cp.originalBB.areas[0] = sa.areaYellow;
-                    cp.originalBB.areas[1] = sa.areaBlue;
-                    std::cout << "fine else " << cp.originalBB.areas[0]
-                              << "\n";
-                }
-            }
-            if (checkImageEqual(boxes[i].src, cp.leftover))
-            {
-                std::cout << "arrivo qui 2 "
-                          << "\n";
-                int id0 = boxes[i].ids[0];
-
-                cp.leftoverBB.boxes.push_back(boxes[i].box);
-                cp.leftoverBB.ids.push_back(boxes[i].ids);
-                cp.leftoverBB.labels.push_back(boxes[i].labels);
-                if (id0 == 1 || id0 == 2 || id0 == 3 || id0 == 4 || id0 == 5 || id0 == 12)
-                {
-                    std::cout << "scelgo 0 "
-                              << "\n";
-
-                    cv::Mat shifted;
-                    bilateralFilter(boxes[i].src, shifted, 1, 0.5, 0.5);
-                    cv::pyrMeanShiftFiltering(shifted, shifted, 40, 200);
-
-                    cp.leftoverBB.segmentArea = ip.kmeansSegmentation(2, shifted); // K = 2
-                    showImg(" ", cp.leftoverBB.segmentArea);
-
-                    SegmentAreas sa;
-                    sa.p1 = cp.leftoverBB.segmentArea;
-                    computeSegmentArea(sa);
-                    cp.leftoverBB.areas[0] = sa.areaYellow;
-                    std::cout << "fine 0 : " << cp.leftoverBB.areas[0]
-                              << "\n";
-                }
-                else
-                {
-                    std::cout << "scelgo else "
-                              << "\n";
-
-                    cv::Mat shifted;
-                    bilateralFilter(boxes[i].src, shifted, 1, 0.5, 0.5);
-                    cv::pyrMeanShiftFiltering(shifted, shifted, 40, 200);
-
-                    cp.leftoverBB.segmentArea = ip.kmeansSegmentation(3, shifted); // K = 3
-                    showImg(" ", cp.leftoverBB.segmentArea);
-
-                    SegmentAreas sa;
-                    sa.p1 = cp.leftoverBB.segmentArea;
-                    computeSegmentArea(sa);
-                    cp.leftoverBB.areas[0] = sa.areaYellow;
-                    cp.leftoverBB.areas[1] = sa.areaBlue;
-                    std::cout << "fine else" << cp.leftoverBB.areas[0]
-                              << "\n";
-                }
-            }
+            finalVec.push_back(result);
         }
-        segmentedPairsWithBBs.push_back(cp);
+        if (k == 3)
+        {
+            cv::Mat maskYellow = getYellowArea(segmentLeftover);
+            cv::Mat maskBlue = getBlueArea(segmentLeftover);
+
+            cv::Mat segment1, segment2;
+            leftoverDish.copyTo(segment1, maskYellow);
+            leftoverDish.copyTo(segment2, maskBlue);
+
+            cv::Scalar avgSegment1, avgSegment2;
+            avgSegment1 = computeAvgColor(segment1);
+            avgSegment2 = computeAvgColor(segment2);
+
+            double dist1 = cv::norm(avgColorOriginal - avgSegment1);
+            double dist2 = cv::norm(avgColorOriginal - avgSegment2);
+
+            if (dist1 < dist2)
+            {
+                result.segmentLeftover = maskYellow;
+                result.segmentOriginal = f.segmentArea;
+                result.id = f.id;
+            }
+            else
+            {
+                result.segmentLeftover = maskBlue;
+                result.segmentOriginal = f.segmentArea;
+                result.id = f.id;
+            }
+
+            std::cout << "K == 3\n";
+            std::cout << "Result " << i << " Segment original size: " << result.segmentOriginal.size() << std::endl;
+            std::cout << "Result " << i << " Segment Leftover size: " << result.segmentLeftover.size() << std::endl;
+            std::cout << "Result " << i << " Food id: " << result.id << std::endl;
+
+            finalVec.push_back(result);
+        }
     }
-    return segmentedPairsWithBBs;
+
+    return result;
 }
 
 void Leftover::breadFinder(cv::Mat &leftover)
@@ -765,7 +746,7 @@ void printVector(const std::vector<Couple> &pairs, const std::string &title)
     }
 }
 
-void printVectorUpdate(const std::vector<Couple> &pairs, const std::string &title)
+void printVectorUpdate(const std::vector<SegmentCouple> &pairs, const std::string &title)
 {
     std::cout << "\nentro nel print vector updated\n";
     if (pairs.size() == 0)
@@ -778,8 +759,12 @@ void printVectorUpdate(const std::vector<Couple> &pairs, const std::string &titl
     {
         std::cout << "i: " << i << "; ";
         i++;
-        if (!pair.originalBB.segmentArea.empty() && !pair.leftoverBB.segmentArea.empty())
-            concatShowImg(title, pair.originalBB.segmentArea, pair.leftoverBB.segmentArea);
+        if (!pair.segmentOriginal.empty() && !pair.segmentLeftover.empty())
+            concatShowImg(title, pair.segmentOriginal, pair.segmentLeftover);
+        else
+        {
+            std::cerr << "One of the two pairs is empty.";
+        }
     }
 }
 

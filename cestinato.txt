@@ -52,3 +52,61 @@ void Leftover::allDishesDifferent(std::vector<Couple> &finalPairs, const std::ve
     {
     }
 }
+
+
+
+
+___________________-
+
+from old main:
+std::vector<cv::Mat> removedDishes;
+    for (int d = 0; d < dishes.size(); d++)
+    {
+        // FILTERS
+        cv::Mat src = dishes[d];
+        cv::Mat rmvDish = dishes[d];
+        // cv::Mat shifted;
+        // bilateralFilter(src, shifted, 1, 0.5, 0.5);
+        // cv::pyrMeanShiftFiltering(shifted, shifted, 40, 200);
+        // showImg("PyrMean", shifted);
+        // removeDish(shifted);
+
+        removeDish(rmvDish);
+        sharpenImg(rmvDish, SharpnessType::LAPLACIAN);
+
+        removedDishes.push_back(rmvDish);
+
+        // showImg("Image", rmvDish);
+
+        // imgProc.doMSER(shifted, resMSER);
+        // showImg("MSER", resMSER);
+
+        // CALLBACK
+        /*namedWindow(window_name);
+        PassedStruct *ps = new PassedStruct;
+        ps->p1 = shifted;
+        ps->p2 = to_string(d);
+        createTrackbar("K trackbar", window_name, NULL, max_k, onTrackbar, ps);
+        onTrackbar(2, ps);
+        waitKey(0);
+        delete ps;
+
+        showImg("Choose a K for KMeans", shifted);
+        int k;
+        cout << "Choose a K KMeans (max 5): ";
+        cin >> k;
+        k = min(5, k);
+
+        cv::Mat r = imgProc.kmeansSegmentation(k, shifted);
+        showImg(to_string(k), r);
+        imwrite("../images/Results/kmeansResult" + to_string(d) + ".jpg", r); */
+    }
+
+    cout << "XX" << endl;
+
+    /* // READING RESULTS
+   for (int d = 0; d < dishes.size(); d++)
+   {
+       Mat segmentedImg = imread("../images/Results/kmeansResult" + to_string(d) + ".jpg", CV_32F);
+       segmentedImages.push_back(segmentedImg);
+   } */

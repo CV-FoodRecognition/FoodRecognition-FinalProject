@@ -25,7 +25,7 @@ public:
     void doHough(cv::Mat &in);
     void doMSER(cv::Mat &shifted, cv::Mat &result);
     cv::Mat kmeansSegmentation(int k, cv::Mat &src);
-
+    std::vector<cv::Mat> removeDish(const std::vector<cv::Mat> &src);
     std::vector<cv::Mat> &getDishes() { return dishes; }
     std::vector<int> &getDishesMatches() { return dishesMatches; }
     std::vector<cv::Rect> &getMserBbox() { return mser_bbox; }
